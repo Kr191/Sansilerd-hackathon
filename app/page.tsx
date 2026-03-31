@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Header from '@/components/Header'
 import BottomNav from '@/components/BottomNav'
@@ -12,6 +12,11 @@ export default function Home() {
   const [searchCriteria, setSearchCriteria] = useState<any>(null)
 
   const handleSelectProperty = (property: any) => {
+    // เก็บ search criteria ใน sessionStorage เพื่อให้กลับมาได้
+    if (searchCriteria) {
+      sessionStorage.setItem('searchCriteria', JSON.stringify(searchCriteria))
+    }
+    
     // นำทางไปหน้า simulator พร้อมส่งข้อมูล
     const params = new URLSearchParams({
       income: searchCriteria?.income?.toString() || '0',
@@ -19,6 +24,14 @@ export default function Home() {
     })
     router.push(`/simulator/${property.id}?${params.toString()}`)
   }
+
+  // ตรวจสอบว่ามี search criteria ใน sessionStorage หรือไม่
+  useEffect(() => {
+    const savedCriteria = sessionStorage.getItem('searchCriteria')
+    if (savedCriteria && !searchCriteria) {
+      setSearchCriteria(JSON.parse(savedCriteria))
+    }
+  }, [])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -33,7 +46,10 @@ export default function Home() {
           <PropertyMatches 
             criteria={searchCriteria} 
             onSelectProperty={handleSelectProperty}
-            onBack={() => setSearchCriteria(null)}
+            onBack={() => {
+              setSearchCriteria(null)
+              sessionStorage.removeItem('searchCriteria')
+            }}
           />
         )}
       </main>

@@ -36,7 +36,7 @@ export default function SimulatorView({ property, onSimulate, onBack }: Simulato
     <div className="max-w-2xl mx-auto px-4 py-6 pb-24">
       {/* Back Button */}
       <button 
-        onClick={onBack || (() => router.back())}
+        onClick={onBack || (() => router.push('/'))}
         className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors"
       >
         <ArrowLeft className="w-5 h-5" />
