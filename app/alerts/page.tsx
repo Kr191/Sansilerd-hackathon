@@ -4,57 +4,67 @@ import { useState, useEffect } from 'react'
 import Header from '@/components/Header'
 import BottomNav from '@/components/BottomNav'
 import { TrendingUp, AlertTriangle, Bell, DollarSign, Home } from 'lucide-react'
-import { sansiriProperties } from '@/lib/sansiriData'
+import { Property } from '@/lib/sansiriData'
 
 export default function AlertsPage() {
   const [mockAlerts, setMockAlerts] = useState<any[]>([])
 
   useEffect(() => {
-    // Mock alerts based on portfolio properties
-    const alerts = [
-      {
-        id: 1,
-        type: 'selling',
-        property: sansiriProperties[1], // The Monument Thong Lo
-        title: 'Target Profit Reached',
-        message: 'Your property has reached +15% profit target. Market conditions are optimal for selling.',
-        priority: 'high',
-        date: '2 hours ago',
-        action: 'Sell Now'
-      },
-      {
-        id: 2,
-        type: 'rental',
-        property: sansiriProperties[6], // Via ARI
-        title: 'Lease Expiring Soon',
-        message: 'Current lease expires in 30 days. Recommended rent increase: +8%',
-        priority: 'medium',
-        date: '1 day ago',
-        action: 'Review Terms'
-      },
-      {
-        id: 3,
-        type: 'market',
-        property: sansiriProperties[0], // The Base Sukhumvit 77
-        title: 'Market Opportunity',
-        message: 'Similar properties in area increased by 12%. Consider price adjustment.',
-        priority: 'low',
-        date: '3 days ago',
-        action: 'View Analysis'
-      },
-      {
-        id: 4,
-        type: 'maintenance',
-        property: sansiriProperties[9], // The Monument Sanampao
-        title: 'Maintenance Due',
-        message: 'Annual property inspection recommended. Schedule within 14 days.',
-        priority: 'medium',
-        date: '5 days ago',
-        action: 'Schedule'
-      }
-    ]
-    setMockAlerts(alerts)
+    // Fetch live properties, then use them for demo alerts
+    fetch('/api/projects')
+      .then(r => r.json())
+      .then(data => {
+        const all: Property[] = data.projects || []
+        if (all.length < 4) return
+
+        const mid = Math.floor(all.length / 2)
+        const alerts = [
+          {
+            id: 1,
+            type: 'selling',
+            property: all[1],
+            title: 'Target Profit Reached',
+            message: 'Your property has reached +15% profit target. Market conditions are optimal for selling.',
+            priority: 'high',
+            date: '2 hours ago',
+            action: 'Sell Now'
+          },
+          {
+            id: 2,
+            type: 'rental',
+            property: all[mid],
+            title: 'Lease Expiring Soon',
+            message: 'Current lease expires in 30 days. Recommended rent increase: +8%',
+            priority: 'medium',
+            date: '1 day ago',
+            action: 'Review Terms'
+          },
+          {
+            id: 3,
+            type: 'market',
+            property: all[0],
+            title: 'Market Opportunity',
+            message: 'Similar properties in area increased by 12%. Consider price adjustment.',
+            priority: 'low',
+            date: '3 days ago',
+            action: 'View Analysis'
+          },
+          {
+            id: 4,
+            type: 'maintenance',
+            property: all[mid + 1] || all[2],
+            title: 'Maintenance Due',
+            message: 'Annual property inspection recommended. Schedule within 14 days.',
+            priority: 'medium',
+            date: '5 days ago',
+            action: 'Schedule'
+          }
+        ]
+        setMockAlerts(alerts)
+      })
+      .catch(() => setMockAlerts([]))
   }, [])
+
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {

@@ -3,20 +3,30 @@
 import { useState, useEffect } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { TrendingUp, AlertTriangle } from 'lucide-react'
-import { sansiriProperties, Property } from '@/lib/sansiriData'
+import { Property } from '@/lib/sansiriData'
 
 export default function Portfolio() {
   const [mockAssets, setMockAssets] = useState<Property[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // ใช้ 3 properties แรกจาก Sansiri เป็น mock portfolio
-    const selectedProperties = [
-      sansiriProperties[1], // The Monument Thong Lo
-      sansiriProperties[6], // Via ARI
-      sansiriProperties[0], // The Base Sukhumvit 77
-    ]
-    setMockAssets(selectedProperties)
+    // Fetch live properties and pick 3 for demo portfolio
+    fetch('/api/projects?category=condo')
+      .then(r => r.json())
+      .then(data => {
+        const all: Property[] = data.projects || []
+        // Pick 3 spread across the list for variety
+        const picks = [
+          all[1],
+          all[Math.floor(all.length / 2)],
+          all[0],
+        ].filter(Boolean)
+        setMockAssets(picks)
+      })
+      .catch(() => setMockAssets([]))
+      .finally(() => setLoading(false))
   }, [])
+
 
   const portfolioData = [
     { month: 'Aug 23', value: 35 },

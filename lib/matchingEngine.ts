@@ -1,4 +1,4 @@
-import { sansiriProperties, Property } from './sansiriData'
+import { Property } from './sansiriData'
 import { aiAgent } from './aiAgent'
 
 export function calculateMatchScore(property: Property, criteria: any): number {
@@ -19,17 +19,18 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c
 }
 
-export function getTopMatches(criteria: any) {
+export function getTopMatches(properties: Property[], criteria: any) {
   const targetCount = 5 // ต้องการ 5 โครงการ
   
   // กรองตามงบประมาณ
-  const budgetFiltered = sansiriProperties.filter(p => 
+  const budgetFiltered = properties.filter(p => 
     p.price >= criteria.budget_min && p.price <= criteria.budget_max
   )
 
   if (budgetFiltered.length === 0) {
     return []
   }
+
 
   // กรองตามพื้นที่ที่เลือก (ถ้ามี)
   let locationFiltered = budgetFiltered

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { sansiriProperties } from '@/lib/sansiriData'
+import { fetchSansiriProperties } from '@/lib/sansiriData'
 import { aiAgent } from '@/lib/aiAgent'
 
 export async function POST(request: Request) {
@@ -13,8 +13,10 @@ export async function POST(request: Request) {
       criteria 
     } = body
     
-    // Find property
-    const property = sansiriProperties.find(p => p.id === property_id)
+    // Find property from live data
+    const properties = await fetchSansiriProperties()
+    const property = properties.find(p => p.id === property_id)
+
     
     if (!property) {
       return NextResponse.json(
