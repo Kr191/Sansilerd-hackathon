@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server'
-import { sansiriProperties } from '@/lib/sansiriData'
+import { fetchSansiriProperties } from '@/lib/sansiriData'
 import { aiAgent } from '@/lib/aiAgent'
 
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    
+
+    // Fetch live properties (falls back to hardcoded if API fails)
+    const sansiriProperties = await fetchSansiriProperties()
+
     // Validate required fields
     if (!body.budget_min || !body.budget_max || !body.goal) {
       return NextResponse.json(

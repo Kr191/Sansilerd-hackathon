@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { sansiriProperties } from '@/lib/sansiriData'
+import { fetchSansiriProperties } from '@/lib/sansiriData'
 import { aiAgent } from '@/lib/aiAgent'
 
 export async function POST(request: Request) {
@@ -8,8 +8,10 @@ export async function POST(request: Request) {
     
     const { property_id, price, downPayment, interestRate, tenure, goal } = body
     
-    // Find property
-    let property = sansiriProperties.find(p => p.id === property_id)
+    // Find property from live data
+    const properties = await fetchSansiriProperties()
+    let property = properties.find(p => p.id === property_id)
+
     
     // If property not found but price provided, create mock property
     if (!property && price) {
