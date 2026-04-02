@@ -17,6 +17,9 @@ export default function Home() {
       sessionStorage.setItem('searchCriteria', JSON.stringify(searchCriteria))
     }
     
+    // เก็บ property ที่เลือกใน localStorage เพื่อให้กลับมาได้
+    localStorage.setItem('selectedProperty', JSON.stringify(property))
+    
     // นำทางไปหน้า simulator พร้อมส่งข้อมูล
     const params = new URLSearchParams({
       income: searchCriteria?.income?.toString() || '0',
@@ -49,6 +52,7 @@ export default function Home() {
             onBack={() => {
               setSearchCriteria(null)
               sessionStorage.removeItem('searchCriteria')
+              localStorage.removeItem('selectedProperty') // ลบ property ที่เลือกด้วย
             }}
           />
         )}

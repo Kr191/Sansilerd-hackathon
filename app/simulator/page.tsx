@@ -1,11 +1,47 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import Header from '@/components/Header'
 import BottomNav from '@/components/BottomNav'
 
 export default function SimulatorIndexPage() {
   const router = useRouter()
+  const [isChecking, setIsChecking] = useState(true)
+
+  useEffect(() => {
+    // ตรวจสอบว่ามี property ที่เลือกไว้ใน localStorage หรือไม่
+    const savedProperty = localStorage.getItem('selectedProperty')
+    const savedCriteria = sessionStorage.getItem('searchCriteria')
+    
+    if (savedProperty) {
+      try {
+        const property = JSON.parse(savedProperty)
+        const criteria = savedCriteria ? JSON.parse(savedCriteria) : null
+        
+        // Redirect ไปที่ property ที่เลือกไว้
+        const params = new URLSearchParams({
+          income: criteria?.income?.toString() || '0',
+          expense: criteria?.expense?.toString() || '0'
+        })
+        router.push(`/simulator/${property.id}?${params.toString()}`)
+        return
+      } catch (e) {
+        console.error('Failed to parse saved property:', e)
+        localStorage.removeItem('selectedProperty')
+      }
+    }
+    
+    setIsChecking(false)
+  }, [router])
+
+  if (isChecking) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-600">Loading...</div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

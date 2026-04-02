@@ -16,17 +16,24 @@ export default function SimulatorView({ property, onSimulate, onBack }: Simulato
   const [hoveredPoint, setHoveredPoint] = useState<number | null>(null)
 
   useEffect(() => {
+    // ตรวจสอบและใส่ค่า default ถ้าไม่มี capitalGainProjection
+    const capitalGain = property.capitalGainProjection || {
+      year3: 10,
+      year5: 18,
+      year10: 40
+    }
+    
     // คำนวณ forecast
     const currentValue = property.price
-    const year5Value = currentValue * (1 + property.capitalGainProjection.year5 / 100)
-    const year10Value = currentValue * (1 + property.capitalGainProjection.year10 / 100)
+    const year5Value = currentValue * (1 + capitalGain.year5 / 100)
+    const year10Value = currentValue * (1 + capitalGain.year10 / 100)
     
     setForecast({
       current: currentValue,
       year5: year5Value,
       year10: year10Value,
-      growth5: property.capitalGainProjection.year5,
-      growth10: property.capitalGainProjection.year10
+      growth5: capitalGain.year5,
+      growth10: capitalGain.year10
     })
   }, [property])
 
