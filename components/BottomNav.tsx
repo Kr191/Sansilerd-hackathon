@@ -25,21 +25,20 @@ export default function BottomNav() {
   const currentView = getCurrentView()
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-50">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-[55]">
       <div className="max-w-md mx-auto flex justify-around items-center h-16">
         {navItems.map((item) => {
           const Icon = item.icon
           const isActive = currentView === item.id
-          
           return (
             <button
               key={item.id}
               onClick={() => router.push(item.path)}
               className={`flex flex-col items-center justify-center flex-1 h-full transition ${
-                isActive ? 'text-blue-600' : 'text-gray-400'
+                isActive ? 'text-violet-700' : 'text-gray-400'
               }`}
             >
-              <Icon className={`w-6 h-6 mb-1 ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />
+              <Icon className={`w-6 h-6 mb-1 ${isActive ? 'text-violet-700' : 'text-gray-400'}`} />
               <span className="text-xs font-medium">{item.label}</span>
             </button>
           )

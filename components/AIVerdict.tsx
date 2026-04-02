@@ -11,22 +11,242 @@ interface AIVerdictProps {
 }
 
 export default function AIVerdict({ property, investmentData, verdictData, onBack }: AIVerdictProps) {
-  // Mock verdict data if not provided
+  const [addingToPortfolio, setAddingToPortfolio] = useState(false)
+  const [downloadingPDF, setDownloadingPDF] = useState(false)
+  const [portfolioAdded, setPortfolioAdded] = useState(false)
+  
+  // คำนวณข้อมูลจริงจาก investmentData และ property
+  const downPayment = investmentData?.downPayment || 0
+  const loanAmount = property.price - downPayment
+  const monthlyPayment = investmentData?.monthly_payment || (() => {
+    const annualRate = 0.042
+    const monthlyRate = annualRate / 12
+    const numPayments = 30 * 12
+    return Math.round((loanAmount * monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / 
+                     (Math.pow(1 + monthlyRate, numPayments) - 1))
+  })()
+  
+  const rentalYield = property.rentalYield || 5.5
+  const roi = rentalYield
+  const averageRent = property.averageRent || Math.round((property.price * rentalYield) / 100 / 12)
+  
+  // คำนวณ risk level จาก location score และ liquidity score
+  const locationScore = property.locationScore || 75
+  const liquidityScore = property.liquidityScore || 75
+  const avgScore = (locationScore + liquidityScore) / 2
+  const riskLevel = avgScore > 85 ? 'low' : avgScore > 70 ? 'medium' : 'high'
+  
+  // คำนวณ ROI vs Market
+  const marketAvgROI = 6.5
+  const roiDiff = (roi - marketAvgROI).toFixed(1)
+  
+  // สร้าง verdict
   const verdict = verdictData || {
-    decision: 'recommended',
-    confidence: 85,
-    roi: 8.4,
-    monthlyPayment: 24500,
-    riskLevel: 'low',
+    decision: roi > 5 && riskLevel !== 'high' ? 'recommended' : 'consider',
+    confidence: Math.min(95, Math.round(avgScore)),
+    roi: roi,
+    monthlyPayment: monthlyPayment,
+    riskLevel: riskLevel,
     reasons: [
-      'ROI สูงกว่าค่าเฉลี่ยตลาด 1.5%',
-      'เหมาะกับงบประมาณ',
-      'ทำเลดีมีศักยภาพเติบโต',
-      'คุณครอบคลุม 100%'
+      roi > marketAvgROI ? `ROI สูงกว่าค่าเฉลี่ยตลาด ${roiDiff}%` : 'ROI ใกล้เคียงค่าเฉลี่ยตลาด',
+      downPayment >= property.price * 0.1 ? 'เหมาะกับงบประมาณ' : 'ต้องการเงินดาวน์เพิ่ม',
+      locationScore > 80 ? 'ทำเลดีมีศักยภาพเติบโต' : 'ทำเลปานกลาง',
+      liquidityScore > 80 ? 'สภาพคล่องสูง' : 'สภาพคล่องปานกลาง'
     ]
   }
 
   const isRecommended = verdict.decision === 'recommended'
+  
+  // คำนวณ 5-year cashflow projection
+  const yearlyData = Array.from({ length: 5 }, (_, i) => {
+    const year = i + 1
+    const rentGrowth = 1 + (0.08 * year) // เพิ่ม 8% ต่อปี
+    const expenseGrowth = 1 + (0.05 * year) // เพิ่ม 5% ต่อปี
+    return {
+      year,
+      rent: Math.round(averageRent * rentGrowth),
+      expense: Math.round(monthlyPayment * 0.4 * expenseGrowth) // ค่าใช้จ่าย ~40% ของค่าผ่อน
+    }
+  })
+  
+  // ฟังก์ชันบันทึกลง Portfolio
+  const handleAddToPortfolio = () => {
+    setAddingToPortfolio(true)
+    
+    try {
+      // ดึง portfolio ปัจจุบันจาก localStorage
+      const existingPortfolio = localStorage.getItem('portfolio')
+      const portfolio = existingPortfolio ? JSON.parse(existingPortfolio) : []
+      
+      // สร้าง portfolio item
+      const portfolioItem = {
+        id: `${property.id}-${Date.now()}`,
+        property: property,
+        investment: {
+          downPayment: downPayment,
+          monthlyPayment: monthlyPayment,
+          roi: roi,
+          riskLevel: riskLevel
+        },
+        verdict: verdict,
+        addedAt: new Date().toISOString()
+      }
+      
+      // เช็คว่ามีอยู่แล้วหรือไม่
+      const exists = portfolio.some((item: any) => item.property.id === property.id)
+      
+      if (!exists) {
+        portfolio.push(portfolioItem)
+        localStorage.setItem('portfolio', JSON.stringify(portfolio))
+        setPortfolioAdded(true)
+        
+        // แสดง success message
+        setTimeout(() => {
+          alert('✅ Added to Portfolio successfully!')
+        }, 300)
+      } else {
+        alert('ℹ️ This property is already in your portfolio')
+      }
+    } catch (error) {
+      console.error('Error adding to portfolio:', error)
+      alert('❌ Failed to add to portfolio')
+    } finally {
+      setAddingToPortfolio(false)
+    }
+  }
+  
+  // ฟังก์ชันสร้าง PDF
+  const handleDownloadPDF = () => {
+    setDownloadingPDF(true)
+    
+    try {
+      // สร้าง HTML content สำหรับ PDF
+      const pdfContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Investment Analysis - ${property.name}</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
+    h1 { color: #1e40af; border-bottom: 3px solid #3b82f6; padding-bottom: 10px; }
+    h2 { color: #374151; margin-top: 30px; }
+    .section { margin: 20px 0; padding: 20px; background: #f9fafb; border-radius: 8px; }
+    .metric { display: inline-block; margin: 10px 20px 10px 0; }
+    .metric-label { font-size: 12px; color: #6b7280; text-transform: uppercase; }
+    .metric-value { font-size: 24px; font-weight: bold; color: #111827; }
+    .recommended { color: #10b981; font-weight: bold; }
+    .consider { color: #f59e0b; font-weight: bold; }
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+    th { background: #f3f4f6; font-weight: bold; }
+    .footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid #e5e7eb; font-size: 12px; color: #6b7280; }
+  </style>
+</head>
+<body>
+  <h1>Investment Analysis Report</h1>
+  <p><strong>Generated:</strong> ${new Date().toLocaleString('th-TH')}</p>
+  
+  <div class="section">
+    <h2>Property Information</h2>
+    <p><strong>Name:</strong> ${property.name}</p>
+    <p><strong>Location:</strong> ${property.location}, ${property.district}, ${property.province}</p>
+    <p><strong>Type:</strong> ${property.type}</p>
+    <p><strong>Price:</strong> ${property.price.toLocaleString()} THB</p>
+    <p><strong>Size:</strong> ${property.size} sqm</p>
+    <p><strong>Bedrooms:</strong> ${property.bedrooms} | <strong>Bathrooms:</strong> ${property.bathrooms}</p>
+  </div>
+  
+  <div class="section">
+    <h2>AI Verdict</h2>
+    <p class="${verdict.decision === 'recommended' ? 'recommended' : 'consider'}">
+      Decision: ${verdict.decision.toUpperCase()}
+    </p>
+    <p><strong>Confidence:</strong> ${verdict.confidence}%</p>
+    <p><strong>Risk Level:</strong> ${riskLevel.toUpperCase()}</p>
+    <ul>
+      ${verdict.reasons.map((r: string) => `<li>${r}</li>`).join('')}
+    </ul>
+  </div>
+  
+  <div class="section">
+    <h2>Investment Metrics</h2>
+    <div class="metric">
+      <div class="metric-label">Expected ROI</div>
+      <div class="metric-value">${roi.toFixed(1)}%</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Monthly Payment</div>
+      <div class="metric-value">${monthlyPayment.toLocaleString()} THB</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Down Payment</div>
+      <div class="metric-value">${downPayment.toLocaleString()} THB</div>
+    </div>
+  </div>
+  
+  <div class="section">
+    <h2>5-Year Cashflow Projection</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Year</th>
+          <th>Rental Income</th>
+          <th>Expenses</th>
+          <th>Net Cashflow</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${yearlyData.map(d => `
+          <tr>
+            <td>Year ${d.year}</td>
+            <td>${d.rent.toLocaleString()} THB</td>
+            <td>${d.expense.toLocaleString()} THB</td>
+            <td>${(d.rent - d.expense).toLocaleString()} THB</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  </div>
+  
+  <div class="section">
+    <h2>Recommended Rent Range</h2>
+    <p><strong>Recommended:</strong> ${averageRent.toLocaleString()} THB/month</p>
+    <p><strong>Min Range:</strong> ${Math.round(averageRent * 0.85).toLocaleString()} THB/month</p>
+    <p><strong>Max Range:</strong> ${Math.round(averageRent * 1.15).toLocaleString()} THB/month</p>
+    <p><strong>Target Occupancy:</strong> ${property.occupancyRate || 95}%</p>
+  </div>
+  
+  <div class="footer">
+    <p>This report is generated by Sansilerd Investment Simulator</p>
+    <p>Disclaimer: This analysis is for informational purposes only and should not be considered as financial advice.</p>
+  </div>
+</body>
+</html>
+      `
+      
+      // สร้าง Blob และ download
+      const blob = new Blob([pdfContent], { type: 'text/html' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `investment-analysis-${property.name.replace(/\s+/g, '-')}-${Date.now()}.html`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      
+      // แสดง success message
+      setTimeout(() => {
+        alert('✅ Analysis report downloaded successfully!')
+      }, 300)
+    } catch (error) {
+      console.error('Error downloading PDF:', error)
+      alert('❌ Failed to download report')
+    } finally {
+      setDownloadingPDF(false)
+    }
+  }
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 pb-24">
@@ -50,23 +270,30 @@ export default function AIVerdict({ property, investmentData, verdictData, onBac
         </div>
 
         <div className="text-center mb-6">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-100 text-emerald-700 rounded-full mb-4">
-            <CheckCircle2 className="w-4 h-4" />
-            <span className="font-semibold text-sm">Recommended</span>
+          <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full mb-4 ${
+            isRecommended 
+              ? 'bg-emerald-100 text-emerald-700' 
+              : 'bg-yellow-100 text-yellow-700'
+          }`}>
+            {isRecommended ? (
+              <CheckCircle2 className="w-4 h-4" />
+            ) : (
+              <AlertTriangle className="w-4 h-4" />
+            )}
+            <span className="font-semibold text-sm capitalize">{verdict.decision}</span>
           </div>
           
           <p className="text-gray-900 text-lg leading-relaxed">
-            <span className="font-bold">ROI สูงกว่าค่าเฉลี่ยตลาด 1.5%</span> เหมาะกับงบประมาณ
-            <br />
-            ทำเลดีมีศักยภาพเติบโต วงเงินกู้ของ
-            <br />
-            คุณครอบคลุม <span className="font-bold">100%</span>
+            {verdict.reasons.map((reason: string, index: number) => (
+              <span key={index}>
+                {index === 0 && <span className="font-bold">{reason}</span>}
+                {index > 0 && reason}
+                {index < verdict.reasons.length - 1 && <br />}
+              </span>
+            ))}
           </p>
         </div>
 
-        <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-semibold text-lg transition-colors">
-          Proceed to Purchase
-        </button>
       </div>
 
 
@@ -76,10 +303,12 @@ export default function AIVerdict({ property, investmentData, verdictData, onBac
         
         <div className="mb-6">
           <div className="flex items-baseline gap-2 mb-1">
-            <p className="text-3xl font-bold text-emerald-600">{verdict.roi}%</p>
-            <span className="text-sm text-emerald-600 flex items-center gap-1">
+            <p className="text-3xl font-bold text-emerald-600">{verdict.roi.toFixed(1)}%</p>
+            <span className={`text-sm flex items-center gap-1 ${
+              parseFloat(roiDiff) > 0 ? 'text-emerald-600' : 'text-gray-600'
+            }`}>
               <TrendingUp className="w-4 h-4" />
-              +1.5% vs Market
+              {parseFloat(roiDiff) > 0 ? '+' : ''}{roiDiff}% vs Market
             </span>
           </div>
           <p className="text-sm text-gray-600">Expected ROI</p>
@@ -172,14 +401,8 @@ export default function AIVerdict({ property, investmentData, verdictData, onBac
             
             {/* Interactive hover areas */}
             <div className="absolute inset-0 flex items-end justify-around gap-2">
-              {[
-                { year: 1, rent: 18000, expense: 8000 },
-                { year: 2, rent: 19500, expense: 8500 },
-                { year: 3, rent: 21000, expense: 9000 },
-                { year: 4, rent: 22800, expense: 9500 },
-                { year: 5, rent: 24500, expense: 10000 }
-              ].map((data) => {
-                const maxValue = 30000
+              {yearlyData.map((data) => {
+                const maxValue = Math.max(...yearlyData.map(d => d.rent)) * 1.2
                 const rentHeight = (data.rent / maxValue) * 100
                 
                 return (
@@ -210,47 +433,34 @@ export default function AIVerdict({ property, investmentData, verdictData, onBac
           <span>Y5</span>
         </div>
         
-        {/* Summary */}
+        {/* Summary - คำนวณจากข้อมูลจริง */}
         <div className="mt-4 grid grid-cols-2 gap-3">
           <div className="p-3 bg-blue-50 rounded-xl">
             <p className="text-xs text-gray-600">
-              รายได้จากค่าเช่าเพิ่มขึ้นเฉลี่ย <span className="font-semibold text-blue-600">8.5%</span> ต่อปี
+              รายได้จากค่าเช่าเพิ่มขึ้นเฉลี่ย <span className="font-semibold text-blue-600">
+                {(() => {
+                  const firstYearRent = yearlyData[0].rent
+                  const lastYearRent = yearlyData[yearlyData.length - 1].rent
+                  const avgGrowth = ((Math.pow(lastYearRent / firstYearRent, 1 / (yearlyData.length - 1)) - 1) * 100).toFixed(1)
+                  return avgGrowth
+                })()}%
+              </span> ต่อปี
             </p>
           </div>
           <div className="p-3 bg-red-50 rounded-xl">
             <p className="text-xs text-gray-600">
-              ค่าใช้จ่ายเพิ่มขึ้นเฉลี่ย <span className="font-semibold text-red-600">5.7%</span> ต่อปี
+              ค่าใช้จ่ายเพิ่มขึ้นเฉลี่ย <span className="font-semibold text-red-600">
+                {(() => {
+                  const firstYearExpense = yearlyData[0].expense
+                  const lastYearExpense = yearlyData[yearlyData.length - 1].expense
+                  const avgGrowth = ((Math.pow(lastYearExpense / firstYearExpense, 1 / (yearlyData.length - 1)) - 1) * 100).toFixed(1)
+                  return avgGrowth
+                })()}%
+              </span> ต่อปี
             </p>
           </div>
         </div>
       </div>
-
-      {/* Exit Strategy & Wealth Alert */}
-      <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 mb-4">
-        <div className="flex items-start gap-3 mb-4">
-          <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
-            <TrendingUp className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <p className="font-bold text-gray-900 mb-1">EXIT STRATEGY & WEALTH ALERT</p>
-            <p className="text-sm text-gray-700 mb-3">
-              <span className="font-semibold">Target Selling Profit: +20% reached!</span>
-              <br />
-              <span className="text-xs text-gray-600">(Alert active - Market Liquidity High)</span>
-            </p>
-          </div>
-        </div>
-        
-        <div className="flex gap-2">
-          <button className="flex-1 bg-white text-gray-700 py-2 px-4 rounded-xl text-sm font-semibold border border-gray-200">
-            Modify Strategy
-          </button>
-          <button className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-xl text-sm font-semibold">
-            Review Market
-          </button>
-        </div>
-      </div>
-
 
       {/* Recommended Next Range */}
       <div className="bg-white rounded-2xl p-6 mb-6 shadow-sm">
@@ -284,7 +494,7 @@ export default function AIVerdict({ property, investmentData, verdictData, onBac
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <p className="text-4xl font-bold text-emerald-600">
-                {property.averageRent ? `${(property.averageRent / 1000).toFixed(1)}K` : '16.5K'}
+                {(averageRent / 1000).toFixed(1)}K
               </p>
               <p className="text-xs text-gray-500 mt-1">บาท</p>
               <p className="text-xs text-gray-500">RECOMMENDED RENT</p>
@@ -296,13 +506,13 @@ export default function AIVerdict({ property, investmentData, verdictData, onBac
           <div className="text-center p-3 bg-gray-50 rounded-xl">
             <p className="text-xs text-gray-500 mb-1">Min Range</p>
             <p className="text-lg font-bold text-gray-900">
-              {property.averageRent ? (property.averageRent * 0.85).toLocaleString() : '14,000'} บาท
+              {Math.round(averageRent * 0.85).toLocaleString()} บาท
             </p>
           </div>
           <div className="text-center p-3 bg-gray-50 rounded-xl">
             <p className="text-xs text-gray-500 mb-1">Max Range</p>
             <p className="text-lg font-bold text-gray-900">
-              {property.averageRent ? (property.averageRent * 1.15).toLocaleString() : '19,000'} บาท
+              {Math.round(averageRent * 1.15).toLocaleString()} บาท
             </p>
           </div>
         </div>
@@ -314,14 +524,26 @@ export default function AIVerdict({ property, investmentData, verdictData, onBac
 
       {/* Action Buttons */}
       <div className="space-y-3">
-        <button className="w-full bg-white border-2 border-gray-200 text-gray-900 py-4 rounded-2xl font-semibold flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors">
+        <button 
+          onClick={handleAddToPortfolio}
+          disabled={addingToPortfolio || portfolioAdded}
+          className={`w-full border-2 py-4 rounded-2xl font-semibold flex items-center justify-center gap-2 transition-colors ${
+            portfolioAdded 
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-700 cursor-default'
+              : 'bg-white border-gray-200 text-gray-900 hover:bg-gray-50'
+          }`}
+        >
           <BookmarkPlus className="w-5 h-5" />
-          Add to Portfolio
+          {portfolioAdded ? 'Added to Portfolio ✓' : addingToPortfolio ? 'Adding...' : 'Add to Portfolio'}
         </button>
 
-        <button className="w-full bg-white border-2 border-gray-200 text-gray-900 py-4 rounded-2xl font-semibold flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors">
+        <button 
+          onClick={handleDownloadPDF}
+          disabled={downloadingPDF}
+          className="w-full bg-white border-2 border-gray-200 text-gray-900 py-4 rounded-2xl font-semibold flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors disabled:opacity-50"
+        >
           <Download className="w-5 h-5" />
-          Download Analysis PDF
+          {downloadingPDF ? 'Generating...' : 'Download Analysis Report'}
         </button>
       </div>
     </div>

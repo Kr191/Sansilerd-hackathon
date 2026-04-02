@@ -211,35 +211,53 @@ function mapApiProperty(raw: any): Property | null {
 
 /**
  * Fetches live property listings from the Sansiri internal API.
- * Results are cached in-memory for 1 hour. Falls back to the local
- * Returns an empty array if the API is unreachable (no offline fallback).
+ * - Returns cached data immediately if fresh (< 1 hour old)
+ * - Returns fallback local data instantly if cache is empty
+ * - Fetches live data in background with 4s timeout; updates cache when done
  */
 export async function fetchSansiriProperties(): Promise<Property[]> {
+  const { FALLBACK_PROPERTIES } = await import('./fallbackData')
+
   // Return from cache if still fresh
   if (_cachedProperties && Date.now() - _cacheTimestamp < CACHE_TTL_MS) {
     return _cachedProperties
   }
 
+  // Kick off live fetch in background (don't await — fire and forget to update cache)
+  fetchLiveInBackground()
+
+  // Return fallback immediately so UI renders without waiting
+  return FALLBACK_PROPERTIES
+}
+
+/** Fetches from Sansiri API with a 4s timeout and updates the in-memory cache */
+async function fetchLiveInBackground(): Promise<void> {
   try {
     const url = `${SANSIRI_API_URL}?api_type=filter&lang=en&size=500&sortBy=projectFullName|asc`
+
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 4000)
+
     const res = await fetch(url, {
+      signal: controller.signal,
       headers: {
         token: SANSIRI_API_TOKEN,
         origin: 'https://www.sansiri.com',
         referer: 'https://www.sansiri.com/',
       },
-      next: { revalidate: 3600 }, // Next.js ISR cache
+      next: { revalidate: 3600 },
     })
+    clearTimeout(timeout)
 
     if (!res.ok) {
-      console.warn(`[sansiriData] API returned ${res.status}, using fallback data`)
-      return []
+      console.warn(`[sansiriData] Live API returned ${res.status}, keeping fallback`)
+      return
     }
 
     const json = await res.json()
     if (json.status !== 'success' || !Array.isArray(json.result)) {
-      console.warn('[sansiriData] Unexpected API response shape, using fallback data')
-      return []
+      console.warn('[sansiriData] Unexpected API response shape, keeping fallback')
+      return
     }
 
     const mapped = json.result
@@ -247,17 +265,19 @@ export async function fetchSansiriProperties(): Promise<Property[]> {
       .filter((p: Property | null): p is Property => p !== null)
 
     if (mapped.length === 0) {
-      console.warn('[sansiriData] API returned 0 mappable properties, using fallback data')
-      return []
+      console.warn('[sansiriData] API returned 0 mappable properties, keeping fallback')
+      return
     }
 
-    console.log(`[sansiriData] Loaded ${mapped.length} properties from Sansiri API`)
+    console.log(`[sansiriData] Live cache updated: ${mapped.length} properties`)
     _cachedProperties = mapped
     _cacheTimestamp = Date.now()
-    return mapped
-  } catch (err) {
-    console.error('[sansiriData] Failed to fetch from Sansiri API, using fallback data:', err)
-    return []
+  } catch (err: any) {
+    if (err?.name === 'AbortError') {
+      console.warn('[sansiriData] Live API timed out after 4s, using fallback')
+    } else {
+      console.error('[sansiriData] Live fetch failed, using fallback:', err)
+    }
   }
 }
 

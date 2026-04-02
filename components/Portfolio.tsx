@@ -35,7 +35,7 @@ export default function Portfolio() {
     { month: 'Sep 11', value: 48 },
   ]
 
-  // คำนวณ portfolio summary
+  // Calculate portfolio summary
   const totalValue = mockAssets.reduce((sum, asset) => sum + asset.price, 0)
   const totalMonthlyRent = mockAssets.reduce((sum, asset) => sum + asset.averageRent, 0)
   const avgROI = mockAssets.reduce((sum, asset) => sum + asset.rentalYield, 0) / (mockAssets.length || 1)
@@ -174,8 +174,8 @@ export default function Portfolio() {
         
         <div className="space-y-3">
           {mockAssets.map((asset, index) => {
-            const isOccupied = index !== 1 // Mock: property ตัวที่ 2 ว่าง
-            const purchasePrice = asset.price * 0.9 // Mock: ซื้อมาที่ 90% ของราคาปัจจุบัน
+            const isOccupied = index !== 1
+            const purchasePrice = asset.price * 0.9
             const profitPercent = ((asset.price - purchasePrice) / purchasePrice) * 100
             
             return (
