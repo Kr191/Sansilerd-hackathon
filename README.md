@@ -1,10 +1,10 @@
-# Sovereign AI - Property Investment Agent
+# Sansilerd AI - Property Investment Agent
 
 🏠 AI-driven property investment simulator that analyzes market liquidity and asset yields to match your capital with institutional-grade opportunities.
 
 ## 🎯 Project Overview
 
-Sovereign AI is a comprehensive MVP platform that helps investors make data-driven decisions in real estate investment. Built with Next.js, TypeScript, and a custom AI agent, it provides end-to-end investment analysis from property discovery to portfolio management.
+Sansilerd AI is a comprehensive MVP platform that helps investors make data-driven decisions in real estate investment. Built with Next.js, TypeScript, and a custom AI agent, it provides end-to-end investment analysis from property discovery to portfolio management.
 
 ### Key Features
 

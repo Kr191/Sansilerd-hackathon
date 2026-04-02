@@ -3,6 +3,12 @@
 import { useState, useEffect } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { TrendingUp, AlertCircle, CheckCircle, XCircle } from 'lucide-react'
+import AmortizationTable from './AmortizationTable'
+import BreakEvenCalculator from './BreakEvenCalculator'
+import TaxCalculator from './TaxCalculator'
+import ScenarioStressTest from './ScenarioStressTest'
+import VacancyRiskScore from './VacancyRiskScore'
+import ComparableSales from './ComparableSales'
 
 interface FinancialAnalysisProps {
   property: any
@@ -97,7 +103,7 @@ export default function FinancialAnalysis({ property }: FinancialAnalysisProps) 
     return (
       <div className="max-w-md mx-auto px-4 py-6">
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <p className="text-yellow-800">กรุณาเลือกโครงการก่อนทำการวิเคราะห์</p>
+          <p className="text-yellow-800">Please select a property before running the analysis.</p>
         </div>
       </div>
     )
@@ -126,7 +132,7 @@ export default function FinancialAnalysis({ property }: FinancialAnalysisProps) 
           <div className="mt-2 flex items-center justify-between">
             <div>
               <div className="text-2xl font-bold">{(property.price / 1000000).toFixed(2)}M THB</div>
-              <div className="text-xs opacity-90">{property.size} ตร.ม. • {property.bedrooms} ห้องนอน</div>
+              <div className="text-xs opacity-90">{property.size} sqm • {property.bedrooms} bed</div>
             </div>
             {property.nearBTS && (
               <div className="bg-white/20 px-3 py-1 rounded-full text-xs">
@@ -464,6 +470,44 @@ export default function FinancialAnalysis({ property }: FinancialAnalysisProps) 
               </button>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Advanced Tools */}
+      {simulation && (
+        <div className="space-y-4 mt-4">
+          <VacancyRiskScore property={property} />
+
+          <ComparableSales property={property} />
+
+          <ScenarioStressTest
+            property={property}
+            baseMonthlyPayment={simulation.monthlyPayment}
+            baseInterestRate={parseFloat(interestRate)}
+            baseOccupancy={property.occupancyRate || 85}
+            monthlyRent={simulation.monthlyRent || property.averageRent}
+          />
+
+          <AmortizationTable
+            loanAmount={property.price - parseFloat(downPayment)}
+            annualRate={parseFloat(interestRate)}
+            tenureYears={parseInt(tenure)}
+          />
+
+          <BreakEvenCalculator
+            propertyPrice={property.price}
+            downPayment={parseFloat(downPayment)}
+            monthlyPayment={simulation.monthlyPayment}
+            monthlyRent={simulation.monthlyRent || property.averageRent}
+            goal={goal}
+            capitalGain5={property.capitalGainProjection?.year5 || 18}
+            capitalGain10={property.capitalGainProjection?.year10 || 40}
+          />
+
+          <TaxCalculator
+            propertyPrice={property.price}
+            purchasePrice={property.price}
+          />
         </div>
       )}
     </div>

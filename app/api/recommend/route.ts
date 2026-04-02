@@ -88,14 +88,14 @@ export async function POST(request: Request) {
       if (exactLocationMatches.length < 5) {
         needsNearbyFill = true
         propertiesToMatch = budgetFilteredProperties // Use all for AI to pick best
-        message = `พบ ${exactLocationMatches.length} โครงการใน ${body.district || body.province} เติมโครงการใกล้เคียงให้ครบ Top 5`
+        message = `Found ${exactLocationMatches.length} project${exactLocationMatches.length > 1 ? 's' : ''} in ${body.district || body.province}. Adding nearby projects to complete Top 5.`
       } else {
         // We have 5 or more exact matches
         propertiesToMatch = exactLocationMatches
       }
     } else if ((body.province || body.district) && exactLocationMatches.length === 0) {
       // No exact matches found
-      message = `ไม่พบโครงการใน ${body.district || body.province} แสดงโครงการใกล้เคียงแทน`
+      message = `No projects found in ${body.district || body.province}. Showing nearby projects instead.`
       exactLocationMatch = false
     }
 
@@ -122,6 +122,7 @@ export async function POST(request: Request) {
         id: match.property.id,
         name: match.property.name,
         price: match.property.price,
+        pricePerSqm: match.property.pricePerSqm,
         location: match.property.location,
         district: match.property.district,
         province: match.property.province,
@@ -129,6 +130,12 @@ export async function POST(request: Request) {
         match_score: match.score,
         short_reason: match.reasons.join(' • '),
         roi: match.property.rentalYield,
+        rentalYield: match.property.rentalYield,
+        averageRent: match.property.averageRent,
+        occupancyRate: match.property.occupancyRate,
+        locationScore: match.property.locationScore,
+        liquidityScore: match.property.liquidityScore,
+        capitalGainProjection: match.property.capitalGainProjection,
         type: match.property.type,
         size: match.property.size,
         bedrooms: match.property.bedrooms,
@@ -157,6 +164,7 @@ export async function POST(request: Request) {
       id: match.property.id,
       name: match.property.name,
       price: match.property.price,
+      pricePerSqm: match.property.pricePerSqm,
       location: match.property.location,
       district: match.property.district,
       province: match.property.province,
@@ -164,6 +172,12 @@ export async function POST(request: Request) {
       match_score: match.score,
       short_reason: match.reasons.join(' • '),
       roi: match.property.rentalYield,
+      rentalYield: match.property.rentalYield,
+      averageRent: match.property.averageRent,
+      occupancyRate: match.property.occupancyRate,
+      locationScore: match.property.locationScore,
+      liquidityScore: match.property.liquidityScore,
+      capitalGainProjection: match.property.capitalGainProjection,
       type: match.property.type,
       size: match.property.size,
       bedrooms: match.property.bedrooms,
