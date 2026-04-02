@@ -20,11 +20,70 @@ export default function SimulatorPage() {
   const [investmentData, setInvestmentData] = useState<any>(null)
   const [verdictData, setVerdictData] = useState<any>(null)
 
+  // บันทึก step ลง localStorage เมื่อมีการเปลี่ยนแปลง
+  useEffect(() => {
+    if (property) {
+      const simulatorState = {
+        propertyId,
+        step,
+        investmentData,
+        verdictData
+      }
+      localStorage.setItem('simulatorState', JSON.stringify(simulatorState))
+    }
+  }, [step, propertyId, property, investmentData, verdictData])
+
   useEffect(() => {
     // ดึงข้อมูล property
     fetch(`/api/projects?id=${propertyId}`)
       .then(res => res.json())
-      .then(data => setProperty(data))
+      .then(data => {
+        // ตรวจสอบและเติมข้อมูลที่ขาดหาย
+        const propertyData = {
+          ...data,
+          capitalGainProjection: data.capitalGainProjection || {
+            year3: 10,
+            year5: 18,
+            year10: 40
+          },
+          rentalYield: data.rentalYield || 5.0,
+          occupancyRate: data.occupancyRate || 85,
+          locationScore: data.locationScore || 75,
+          liquidityScore: data.liquidityScore || 75
+        }
+        
+        setProperty(propertyData)
+        
+        // กู้คืน state จาก localStorage ถ้ามี
+        const savedState = localStorage.getItem('simulatorState')
+        if (savedState) {
+          try {
+            const state = JSON.parse(savedState)
+            if (state.propertyId === propertyId) {
+              setStep(state.step || 'simulator')
+              setInvestmentData(state.investmentData || null)
+              setVerdictData(state.verdictData || null)
+            }
+          } catch (e) {
+            console.error('Failed to restore simulator state:', e)
+          }
+        }
+      })
+      .catch(err => {
+        console.error('Failed to fetch property:', err)
+        // ถ้า fetch ไม่ได้ ลองใช้ข้อมูลจาก localStorage
+        const savedProperty = localStorage.getItem('selectedProperty')
+        if (savedProperty) {
+          try {
+            const data = JSON.parse(savedProperty)
+            if (data.id === propertyId) {
+              setProperty(data)
+            }
+          } catch (e) {
+            console.error('Failed to parse saved property:', e)
+          }
+        }
+      })
     
     // ดึงข้อมูล user criteria จาก query params
     const income = searchParams.get('income')
