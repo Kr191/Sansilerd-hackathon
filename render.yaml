@@ -1,0 +1,16 @@
+# Render.com Blueprint Configuration
+services:
+  - type: web
+    name: sansilerd-hackathon
+    env: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+    healthCheckPath: /
+    autoDeploy: true
