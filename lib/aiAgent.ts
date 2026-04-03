@@ -78,36 +78,36 @@ export class AIInvestmentAgent {
 
     // Budget reasons
     if (budgetFit > 80) {
-      reasons.push('เหมาะกับงบประมาณของคุณ')
+      reasons.push('Fits your budget well')
     } else if (property.price < criteria.budget_max * 0.7) {
-      reasons.push('ราคาต่ำกว่างบ ประหยัดเงินลงทุน')
+      reasons.push('Priced below budget — saves capital')
     }
 
     // ROI reasons
     if (criteria.goal === 'rent') {
       if (property.rentalYield > 6) {
-        reasons.push(`ผลตอบแทนค่าเช่าสูง ${property.rentalYield}%`)
+        reasons.push(`High rental yield ${property.rentalYield}%`)
       }
       if (property.occupancyRate > 90) {
-        reasons.push('อัตราการเช่าเต็มสูง')
+        reasons.push('High occupancy rate')
       }
     } else {
       if (property.capitalGainProjection.year3 > 12) {
-        reasons.push(`มูลค่าเพิ่มสูง ${property.capitalGainProjection.year3}% ใน 3 ปี`)
+        reasons.push(`Strong capital gain ${property.capitalGainProjection.year3}% in 3 years`)
       }
     }
 
     // Location reasons
     if (property.locationScore > 90) {
-      reasons.push('ทำเลยอดเยี่ยม')
+      reasons.push('Prime location')
     }
     if (property.nearBTS || property.nearMRT) {
-      reasons.push('ใกล้ BTS/MRT')
+      reasons.push('Near BTS/MRT')
     }
 
     // Liquidity
     if (property.liquidityScore > 90) {
-      reasons.push('ขายง่าย สภาพคล่องสูง')
+      reasons.push('High liquidity — easy to sell')
     }
 
     return reasons.slice(0, 3) // Return top 3 reasons
@@ -164,27 +164,30 @@ export class AIInvestmentAgent {
   /**
    * Calculate loan assessment
    */
-  calculateLoanAssessment(income: number, expense: number, downPayment: number) {
-    const monthlyIncome = income
-    const monthlyExpense = expense
-    
-    // Calculate DTI (Debt-to-Income Ratio)
-    const dti = monthlyExpense / monthlyIncome
-    
-    // Maximum monthly payment (35% of income)
-    const maxMonthlyPayment = monthlyIncome * 0.35
-    
-    // Estimate max loan (simplified calculation)
-    // Assuming 20 years, 6.5% interest
-    const interestRate = 0.065 / 12
-    const months = 20 * 12
-    const maxLoan = (maxMonthlyPayment * (Math.pow(1 + interestRate, months) - 1)) / 
-                    (interestRate * Math.pow(1 + interestRate, months))
-    
+  calculateLoanAssessment(income: number, expense: number, downPayment: number, propertyPrice?: number, interestRate = 4.2, tenure = 20) {
+    // Monthly mortgage payment on the new property
+    const loanAmount = propertyPrice ? propertyPrice - downPayment : 0
+    const monthlyRate = interestRate / 100 / 12
+    const months = tenure * 12
+    const mortgagePayment = loanAmount > 0
+      ? (loanAmount * monthlyRate * Math.pow(1 + monthlyRate, months)) /
+        (Math.pow(1 + monthlyRate, months) - 1)
+      : 0
+
+    // DTI = (existing obligations + new mortgage) / gross income
+    const totalDebt = expense + mortgagePayment
+    const dti = totalDebt / income
+
+    const maxMonthlyPayment = income * 0.35
+    const interestRateCalc = 0.065 / 12
+    const maxLoan = (maxMonthlyPayment * (Math.pow(1 + interestRateCalc, months) - 1)) /
+                    (interestRateCalc * Math.pow(1 + interestRateCalc, months))
+
     return {
       maxLoan: Math.round(maxLoan),
       monthlyCapacity: Math.round(maxMonthlyPayment),
-      dti: Math.round(dti * 100) / 100,
+      mortgagePayment: Math.round(mortgagePayment),
+      dti: Math.round(dti * 1000) / 1000, // 3 decimal places for accuracy
       status: dti < 0.4 ? 'passed' : dti < 0.5 ? 'warning' : 'failed',
       recommendation: this.getLoanRecommendation(dti, maxLoan, downPayment)
     }
@@ -192,13 +195,13 @@ export class AIInvestmentAgent {
 
   private getLoanRecommendation(dti: number, maxLoan: number, downPayment: number): string {
     if (dti < 0.3) {
-      return 'สถานะการเงินดีมาก สามารถกู้ได้สูงสุด ' + (maxLoan / 1000000).toFixed(1) + ' ล้านบาท'
+      return 'Excellent financial standing. Max loan capacity: ฿' + (maxLoan / 1000000).toFixed(1) + 'M'
     } else if (dti < 0.4) {
-      return 'สถานะการเงินดี แนะนำให้กู้ไม่เกิน ' + (maxLoan * 0.8 / 1000000).toFixed(1) + ' ล้านบาท'
+      return 'Good financial standing. Recommended loan up to ฿' + (maxLoan * 0.8 / 1000000).toFixed(1) + 'M'
     } else if (dti < 0.5) {
-      return 'ภาระหนี้ค่อนข้างสูง ควรพิจารณาลดค่าใช้จ่ายก่อนกู้'
+      return 'Debt load is moderately high. Consider reducing expenses before applying.'
     } else {
-      return 'ภาระหนี้สูงเกินไป ไม่แนะนำให้กู้เพิ่ม'
+      return 'Debt load too high. Additional borrowing is not recommended at this time.'
     }
   }
 
@@ -230,11 +233,14 @@ export class AIInvestmentAgent {
     let projectedProfit = 0
 
     if (goal === 'rent') {
-      // Rental income scenario
       const monthlyRent = property.averageRent
-      const netMonthlyIncome = monthlyRent - monthlyPayment - (monthlyRent * 0.1) // 10% maintenance
+      const occupancy = (property.occupancyRate ?? 85) / 100
+      const effectiveRent = monthlyRent * occupancy
+      // Expenses: maintenance + common fee + land tax ≈ 1.5% of price per year / 12
+      const monthlyExpenses = Math.round((property.price * 0.015) / 12)
+      const netMonthlyIncome = effectiveRent - monthlyPayment - monthlyExpenses
       const annualIncome = netMonthlyIncome * 12
-      roi = (annualIncome / property.price) * 100
+      roi = downPayment > 0 ? (annualIncome / downPayment) * 100 : 0
       paybackPeriod = downPayment / (netMonthlyIncome > 0 ? netMonthlyIncome : 1)
       projectedProfit = annualIncome * tenure
     } else {
@@ -249,11 +255,16 @@ export class AIInvestmentAgent {
       monthlyPayment: Math.round(monthlyPayment),
       totalPayment: Math.round(totalPayment),
       roi: Math.round(roi * 10) / 10,
-      paybackPeriod: Math.round(paybackPeriod / 12 * 10) / 10, // in years
+      rentalYield: property.rentalYield,
+      paybackPeriod: Math.round(paybackPeriod / 12 * 10) / 10,
       projectedProfit: Math.round(projectedProfit),
       monthlyRent: property.averageRent,
-      netMonthlyCashFlow: goal === 'rent' 
-        ? Math.round(property.averageRent - monthlyPayment - (property.averageRent * 0.1))
+      netMonthlyCashFlow: goal === 'rent'
+        ? Math.round(
+            property.averageRent * ((property.occupancyRate ?? 85) / 100)
+            - monthlyPayment
+            - (property.price * 0.015) / 12
+          )
         : 0
     }
   }
@@ -278,46 +289,50 @@ export class AIInvestmentAgent {
     const cons: string[] = []
     let score = 50
 
-    // Analyze ROI
-    if (simulation.roi > 8) {
-      pros.push(`ROI สูงกว่าค่าเฉลี่ย (${simulation.roi}%)`)
+    // Analyze ROI — use gross rental yield if available, else simulation roi
+    const grossYield = (property as any).rentalYield ?? simulation.rentalYield ?? simulation.roi
+    if (grossYield > 6.5) {
+      pros.push(`Strong rental yield (${grossYield.toFixed(1)}%)`)
       score += 15
-    } else if (simulation.roi < 4) {
-      cons.push(`ROI ต่ำกว่าค่าเฉลี่ย (${simulation.roi}%)`)
+    } else if (grossYield >= 5) {
+      pros.push(`Rental yield near market average (${grossYield.toFixed(1)}%)`)
+      score += 5
+    } else if (grossYield < 4) {
+      cons.push(`Low rental yield (${grossYield.toFixed(1)}%)`)
       score -= 15
     }
 
     // Analyze loan capacity
     if (loanAssessment.status === 'passed') {
-      pros.push('วงเงินกู้เพียงพอ สถานะการเงินดี')
+      pros.push('Loan capacity sufficient — strong financial profile')
       score += 10
     } else if (loanAssessment.status === 'failed') {
-      cons.push('ภาระหนี้สูง อาจมีปัญหาในการกู้')
+      cons.push('High debt load — loan approval may be difficult')
       score -= 20
     }
 
     // Analyze location
     if (property.locationScore > 90) {
-      pros.push('ทำเลยอดเยี่ยม มีศักยภาพสูง')
+      pros.push('Prime location with high growth potential')
       score += 10
     }
 
     // Analyze liquidity
     if (property.liquidityScore > 85) {
-      pros.push('สภาพคล่องสูง ขายง่าย')
+      pros.push('High liquidity — easy to exit')
       score += 5
     } else if (property.liquidityScore < 70) {
-      cons.push('สภาพคล่องต่ำ อาจขายยาก')
+      cons.push('Low liquidity — may be difficult to sell')
       score -= 10
     }
 
     // Analyze cash flow (for rent)
     if (criteria.goal === 'rent') {
       if (simulation.netMonthlyCashFlow > 0) {
-        pros.push(`กระแสเงินสดบวก +${simulation.netMonthlyCashFlow.toLocaleString()} บาท/เดือน`)
+        pros.push(`Positive cash flow +฿${simulation.netMonthlyCashFlow.toLocaleString()}/month`)
         score += 10
       } else {
-        cons.push('กระแสเงินสดติดลบ ต้องเติมเงินทุกเดือน')
+        cons.push('Negative cash flow — requires monthly top-up')
         score -= 15
       }
     }
@@ -343,11 +358,11 @@ export class AIInvestmentAgent {
 
   private generateSummary(property: Property, simulation: any, decision: string): string {
     if (decision === 'recommended') {
-      return `${property.name} เป็นตัวเลือกที่ดีสำหรับการลงทุน มี ROI ${simulation.roi}% และทำเลที่ดี`
+      return `${property.name} is a strong investment choice with ${simulation.roi}% ROI and a prime location.`
     } else if (decision === 'consider') {
-      return `${property.name} มีข้อดีบางประการ แต่ควรพิจารณาปัจจัยเสี่ยงอย่างรอบคอบ`
+      return `${property.name} has some merit but review the risk factors carefully before committing.`
     } else {
-      return `${property.name} อาจไม่เหมาะกับเป้าหมายการลงทุนของคุณในขณะนี้`
+      return `${property.name} does not align well with your investment goals at this time.`
     }
   }
 
@@ -359,14 +374,14 @@ export class AIInvestmentAgent {
   ): string {
     if (decision === 'recommended') {
       if (criteria.goal === 'rent') {
-        return `โครงการนี้เหมาะสำหรับปล่อยเช่า ด้วยผลตอบแทน ${property.rentalYield}% ต่อปี และอัตราการเช่าเต็ม ${property.occupancyRate}% ทำเลใกล้แหล่งงานและสถานศึกษา คาดว่าจะมีผู้เช่าต่อเนื่อง`
+        return `This project is well-suited for rental with a ${property.rentalYield}% annual yield and ${property.occupancyRate}% occupancy rate. Its proximity to employment hubs and transit makes sustained tenant demand likely.`
       } else {
-        return `โครงการนี้มีศักยภาพในการเพิ่มมูลค่า ${property.capitalGainProjection.year5}% ใน 5 ปี เหมาะสำหรับการ Flip ทำเลดีและมีสภาพคล่องสูง`
+        return `This project has strong capital appreciation potential of ${property.capitalGainProjection.year5}% over 5 years. Prime location and high liquidity make it a solid flip candidate.`
       }
     } else if (decision === 'consider') {
-      return `โครงการนี้มีข้อดีในด้านทำเล แต่ควรพิจารณาความเสี่ยงด้านกระแสเงินสดและสภาพคล่อง แนะนำให้เปรียบเทียบกับตัวเลือกอื่นก่อนตัดสินใจ`
+      return `This project has location advantages but carries some cash flow and liquidity risk. Compare with other options before making a final decision.`
     } else {
-      return `ด้วยสถานะการเงินและเป้าหมายของคุณ แนะนำให้พิจารณาโครงการอื่นที่มี ROI สูงกว่าและเหมาะกับงบประมาณมากกว่า`
+      return `Given your financial profile and goals, we recommend exploring projects with higher ROI or a better budget fit.`
     }
   }
 }

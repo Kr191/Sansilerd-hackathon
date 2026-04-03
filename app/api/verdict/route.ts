@@ -9,15 +9,15 @@ export async function POST(request: Request) {
     const { 
       property_id, 
       simulation, 
-      loanAssessment, 
+      user_profile,
+      loanAssessment,
       criteria 
     } = body
-    
+
     // Find property from live data
     const properties = await fetchSansiriProperties()
     const property = properties.find(p => p.id === property_id)
 
-    
     if (!property) {
       return NextResponse.json(
         { error: 'Property not found' },
@@ -25,11 +25,30 @@ export async function POST(request: Request) {
       )
     }
 
+    // DTI = (user existing expenses + new mortgage) / income
+    const income = user_profile?.income || 1
+    const expense = user_profile?.expense ?? 0
+    const mortgagePayment = simulation?.monthlyPayment ?? 0
+    const dti = (expense + mortgagePayment) / income
+    const resolvedLoan = loanAssessment || {
+      status: dti < 0.4 ? 'passed' : dti < 0.5 ? 'warning' : 'failed',
+      dti,
+      maxLoan: 0,
+      monthlyCapacity: income * 0.35,
+    }
+    const resolvedCriteria = criteria || {
+      budget_min: property.price * 0.8,
+      budget_max: property.price * 1.2,
+      goal: 'rent' as const,
+      income: user_profile?.income,
+      expense: user_profile?.expense,
+    }
+
     const verdict = aiAgent.generateVerdict(
       property,
       simulation,
-      loanAssessment,
-      criteria
+      resolvedLoan,
+      resolvedCriteria
     )
     
     return NextResponse.json(verdict)

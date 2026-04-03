@@ -3,8 +3,12 @@
 @tailwind utilities;
 
 :root {
-  --primary: #2563eb;
-  --secondary: #64748b;
+  --primary:       #6B00D7;
+  --primary-dark:  #5500AA;
+  --primary-light: #F0E6FF;
+  --accent:        #6EE000;
+  --accent-dark:   #55B000;
+  --secondary:     #64748b;
 }
 
 body {

@@ -7,66 +7,124 @@ interface DiscoveryFormProps {
   onSubmit: (criteria: any) => void
 }
 
-// Available locations from Sansiri properties
+// All provinces where Sansiri operates — sorted A–Z
 const PROVINCES = [
   { value: 'Bangkok', label: 'Bangkok' },
-  { value: 'Pathum Thani', label: 'Pathum Thani' },
+  { value: 'Chachoengsao', label: 'Chachoengsao' },
+  { value: 'Chiang Mai', label: 'Chiang Mai' },
+  { value: 'Chiang Rai', label: 'Chiang Rai' },
   { value: 'Chonburi', label: 'Chonburi' },
-  { value: 'Samut Prakan', label: 'Samut Prakan' }
+  { value: 'Khon Kaen', label: 'Khon Kaen' },
+  { value: 'Nakhon Ratchasima', label: 'Nakhon Ratchasima' },
+  { value: 'Nonthaburi', label: 'Nonthaburi' },
+  { value: 'Pathum Thani', label: 'Pathum Thani' },
+  { value: 'Phuket', label: 'Phuket' },
+  { value: 'Prachuap Khiri Khan', label: 'Prachuap Khiri Khan (Hua Hin)' },
+  { value: 'Rayong', label: 'Rayong' },
+  { value: 'Samut Prakan', label: 'Samut Prakan' },
+  { value: 'Samut Sakhon', label: 'Samut Sakhon' },
 ]
 
-const BANGKOK_DISTRICTS = [
-  { value: 'Phra Khanong', label: 'Phra Khanong (พระโขนง)' },
-  { value: 'Watthana', label: 'Watthana (วัฒนา)' },
-  { value: 'Ratchathewi', label: 'Ratchathewi (ราชเทวี)' },
-  { value: 'Phaya Thai', label: 'Phaya Thai (พญาไท)' },
-  { value: 'Khlong Toei', label: 'Khlong Toei (คลองเตย)' },
-  { value: 'Pathum Wan', label: 'Pathum Wan (ปทุมวัน)' },
-  { value: 'Bang Rak', label: 'Bang Rak (บางรัก)' },
-  { value: 'Sathon', label: 'Sathon (สาทร)' },
-  { value: 'Yan Nawa', label: 'Yan Nawa (ยานนาวา)' },
-  { value: 'Bang Kho Laem', label: 'Bang Kho Laem (บางคอแหลม)' },
-  { value: 'Phra Nakhon', label: 'Phra Nakhon (พระนคร)' },
-  { value: 'Dusit', label: 'Dusit (ดุสิต)' },
-  { value: 'Bang Sue', label: 'Bang Sue (บางซื่อ)' },
-  { value: 'Chatuchak', label: 'Chatuchak (จตุจักร)' },
-  { value: 'Bang Kapi', label: 'Bang Kapi (บางกะปิ)' },
-  { value: 'Huai Khwang', label: 'Huai Khwang (ห้วยขวาง)' },
-  { value: 'Din Daeng', label: 'Din Daeng (ดินแดง)' },
-  { value: 'Phasi Charoen', label: 'Phasi Charoen (ภาษีเจริญ)' },
-  { value: 'Bangkok Yai', label: 'Bangkok Yai (บางกอกใหญ่)' },
-  { value: 'Bangkok Noi', label: 'Bangkok Noi (บางกอกน้อย)' },
-  { value: 'Thon Buri', label: 'Thon Buri (ธนบุรี)' },
-  { value: 'Khlong San', label: 'Khlong San (คลองสาน)' },
-  { value: 'Taling Chan', label: 'Taling Chan (ตลิ่งชัน)' },
-  { value: 'Bang Phlat', label: 'Bang Phlat (บางพลัด)' },
-  { value: 'Bang Khae', label: 'Bang Khae (บางแค)' },
-  { value: 'Nong Khaem', label: 'Nong Khaem (หนองแขม)' },
-  { value: 'Rat Burana', label: 'Rat Burana (ราษฎร์บูรณะ)' },
-  { value: 'Bang Bon', label: 'Bang Bon (บางบอน)' },
-  { value: 'Thung Khru', label: 'Thung Khru (ทุ่งครุ)' },
-  { value: 'Chom Thong', label: 'Chom Thong (จอมทอง)' },
-  { value: 'Don Mueang', label: 'Don Mueang (ดอนเมือง)' },
-  { value: 'Lak Si', label: 'Lak Si (หลักสี่)' },
-  { value: 'Sai Mai', label: 'Sai Mai (สายไหม)' },
-  { value: 'Khan Na Yao', label: 'Khan Na Yao (คันนายาว)' },
-  { value: 'Saphan Sung', label: 'Saphan Sung (สะพานสูง)' },
-  { value: 'Wang Thonglang', label: 'Wang Thonglang (วังทองหลาง)' },
-  { value: 'Khlong Sam Wa', label: 'Khlong Sam Wa (คลองสามวา)' },
-  { value: 'Bang Na', label: 'Bang Na (บางนา)' },
-  { value: 'Prawet', label: 'Prawet (ประเวศ)' },
-  { value: 'Suan Luang', label: 'Suan Luang (สวนหลวง)' },
-  { value: 'Bueng Kum', label: 'Bueng Kum (บึงกุ่ม)' },
-  { value: 'Lat Krabang', label: 'Lat Krabang (ลาดกระบัง)' },
-  { value: 'Min Buri', label: 'Min Buri (มีนบุรี)' },
-  { value: 'Lat Phrao', label: 'Lat Phrao (ลาดพร้าว)' },
-  { value: 'Bang Khun Thian', label: 'Bang Khun Thian (บางขุนเทียน)' },
-  { value: 'Nong Chok', label: 'Nong Chok (หนองจอก)' },
-  { value: 'Thawi Watthana', label: 'Thawi Watthana (ทวีวัฒนา)' },
-  { value: 'Bang Khen', label: 'Bang Khen (บางเขน)' },
-  { value: 'Vadhana', label: 'Vadhana (วัฒนา)' },
-  { value: 'Sukhumvit', label: 'Sukhumvit Area (สุขุมวิท)' }
-]
+// Districts per province — sorted A–Z
+const DISTRICTS_BY_PROVINCE: Record<string, { value: string; label: string }[]> = {
+  Bangkok: [
+    { value: 'Bang Kapi', label: 'Bang Kapi' },
+    { value: 'Bang Kho Laem', label: 'Bang Kho Laem' },
+    { value: 'Bang Na', label: 'Bang Na' },
+    { value: 'Bang Rak', label: 'Bang Rak' },
+    { value: 'Bang Sue', label: 'Bang Sue' },
+    { value: 'Chatuchak', label: 'Chatuchak' },
+    { value: 'Din Daeng', label: 'Din Daeng' },
+    { value: 'Don Mueang', label: 'Don Mueang' },
+    { value: 'Huai Khwang', label: 'Huai Khwang' },
+    { value: 'Khlong San', label: 'Khlong San' },
+    { value: 'Khlong Toei', label: 'Khlong Toei' },
+    { value: 'Lat Krabang', label: 'Lat Krabang' },
+    { value: 'Lat Phrao', label: 'Lat Phrao' },
+    { value: 'Min Buri', label: 'Min Buri' },
+    { value: 'Pathum Wan', label: 'Pathum Wan' },
+    { value: 'Phaya Thai', label: 'Phaya Thai' },
+    { value: 'Phra Khanong', label: 'Phra Khanong' },
+    { value: 'Phra Nakhon', label: 'Phra Nakhon' },
+    { value: 'Prawet', label: 'Prawet' },
+    { value: 'Ratchathewi', label: 'Ratchathewi' },
+    { value: 'Sathon', label: 'Sathon' },
+    { value: 'Saphan Sung', label: 'Saphan Sung' },
+    { value: 'Suan Luang', label: 'Suan Luang' },
+    { value: 'Sukhumvit', label: 'Sukhumvit Area' },
+    { value: 'Thawi Watthana', label: 'Thawi Watthana' },
+    { value: 'Thon Buri', label: 'Thon Buri' },
+    { value: 'Wang Thonglang', label: 'Wang Thonglang' },
+    { value: 'Watthana', label: 'Watthana' },
+    { value: 'Yan Nawa', label: 'Yan Nawa' },
+  ],
+  Chachoengsao: [
+    { value: 'Bang Nam Priao', label: 'Bang Nam Priao' },
+    { value: 'Bang Pakong', label: 'Bang Pakong' },
+    { value: 'Mueang Chachoengsao', label: 'Mueang Chachoengsao' },
+  ],
+  'Chiang Mai': [
+    { value: 'Hang Dong', label: 'Hang Dong' },
+    { value: 'Mae Rim', label: 'Mae Rim' },
+    { value: 'Mueang Chiang Mai', label: 'Mueang Chiang Mai' },
+    { value: 'San Kamphaeng', label: 'San Kamphaeng' },
+    { value: 'San Sai', label: 'San Sai' },
+    { value: 'Saraphi', label: 'Saraphi' },
+  ],
+  'Chiang Rai': [
+    { value: 'Mueang Chiang Rai', label: 'Mueang Chiang Rai' },
+  ],
+  Chonburi: [
+    { value: 'Bang Lamung', label: 'Bang Lamung (Pattaya)' },
+    { value: 'Mueang Chonburi', label: 'Mueang Chonburi' },
+    { value: 'Phan Thong', label: 'Phan Thong' },
+    { value: 'Si Racha', label: 'Si Racha' },
+  ],
+  'Khon Kaen': [
+    { value: 'Mueang Khon Kaen', label: 'Mueang Khon Kaen' },
+  ],
+  'Nakhon Ratchasima': [
+    { value: 'Mueang Nakhon Ratchasima', label: 'Mueang Nakhon Ratchasima' },
+    { value: 'Pak Chong', label: 'Pak Chong' },
+  ],
+  Nonthaburi: [
+    { value: 'Bang Bua Thong', label: 'Bang Bua Thong' },
+    { value: 'Bang Kruai', label: 'Bang Kruai' },
+    { value: 'Mueang Nonthaburi', label: 'Mueang Nonthaburi' },
+    { value: 'Pak Kret', label: 'Pak Kret' },
+  ],
+  'Pathum Thani': [
+    { value: 'Khlong Luang', label: 'Khlong Luang' },
+    { value: 'Lam Luk Ka', label: 'Lam Luk Ka' },
+    { value: 'Mueang Pathum Thani', label: 'Mueang Pathum Thani' },
+    { value: 'Sam Khok', label: 'Sam Khok' },
+    { value: 'Thanyaburi', label: 'Thanyaburi' },
+  ],
+  Phuket: [
+    { value: 'Kathu', label: 'Kathu' },
+    { value: 'Mueang Phuket', label: 'Mueang Phuket' },
+    { value: 'Thalang', label: 'Thalang' },
+  ],
+  'Prachuap Khiri Khan': [
+    { value: 'Hua Hin', label: 'Hua Hin' },
+    { value: 'Mueang Prachuap Khiri Khan', label: 'Mueang Prachuap Khiri Khan' },
+  ],
+  Rayong: [
+    { value: 'Ban Chang', label: 'Ban Chang' },
+    { value: 'Mueang Rayong', label: 'Mueang Rayong' },
+    { value: 'Pluak Daeng', label: 'Pluak Daeng' },
+  ],
+  'Samut Prakan': [
+    { value: 'Bang Bo', label: 'Bang Bo' },
+    { value: 'Bang Phli', label: 'Bang Phli' },
+    { value: 'Mueang Samut Prakan', label: 'Mueang Samut Prakan' },
+    { value: 'Phra Pradaeng', label: 'Phra Pradaeng' },
+  ],
+  'Samut Sakhon': [
+    { value: 'Krathum Baen', label: 'Krathum Baen' },
+    { value: 'Mueang Samut Sakhon', label: 'Mueang Samut Sakhon' },
+  ],
+}
 
 export default function DiscoveryForm({ onSubmit }: DiscoveryFormProps) {
   const [budgetMin, setBudgetMin] = useState('')
@@ -78,62 +136,42 @@ export default function DiscoveryForm({ onSubmit }: DiscoveryFormProps) {
   const [expense, setExpense] = useState('')
   const [errors, setErrors] = useState<any>({})
 
+  const districts = DISTRICTS_BY_PROVINCE[province] || []
+  const requiresDistrict = districts.length > 0
+
   const validateForm = () => {
-    const newErrors: any = {}
-
-    if (!budgetMin || parseFloat(budgetMin) <= 0) {
-      newErrors.budgetMin = 'กรุณากรอกงบประมาณขั้นต่ำ'
-    }
-    if (!budgetMax || parseFloat(budgetMax) <= 0) {
-      newErrors.budgetMax = 'กรุณากรอกงบประมาณสูงสุด'
-    }
-    if (budgetMin && budgetMax && parseFloat(budgetMin) >= parseFloat(budgetMax)) {
-      newErrors.budgetMax = 'งบสูงสุดต้องมากกว่างบขั้นต่ำ'
-    }
-    if (!income || parseFloat(income) <= 0) {
-      newErrors.income = 'กรุณากรอกรายได้ต่อเดือน'
-    }
-    if (!expense || parseFloat(expense) < 0) {
-      newErrors.expense = 'กรุณากรอกค่าใช้จ่ายต่อเดือน'
-    }
-    if (income && expense && parseFloat(expense) >= parseFloat(income)) {
-      newErrors.expense = 'ค่าใช้จ่ายต้องน้อยกว่ารายได้'
-    }
-    if (province === 'Bangkok' && !district) {
-      newErrors.district = 'กรุณาเลือกเขตใน Bangkok'
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
+    const e: any = {}
+    if (!budgetMin || parseFloat(budgetMin) <= 0) e.budgetMin = 'Please enter minimum budget'
+    if (!budgetMax || parseFloat(budgetMax) <= 0) e.budgetMax = 'Please enter maximum budget'
+    if (budgetMin && budgetMax && parseFloat(budgetMin) >= parseFloat(budgetMax)) e.budgetMax = 'Max budget must be greater than min'
+    if (!income || parseFloat(income) <= 0) e.income = 'Please enter monthly income'
+    if (!expense || parseFloat(expense) < 0) e.expense = 'Please enter monthly expense'
+    if (income && expense && parseFloat(expense) >= parseFloat(income)) e.expense = 'Expense must be less than income'
+    if (requiresDistrict && !district) e.district = 'Please select a district'
+    setErrors(e)
+    return Object.keys(e).length === 0
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (!validateForm()) {
-      return
-    }
-
-    const location = province === 'Bangkok' && district 
-      ? `${district}, Bangkok` 
-      : province
-
+  const handleSubmit = (ev: React.FormEvent) => {
+    ev.preventDefault()
+    if (!validateForm()) return
+    const location = district ? `${district}, ${province}` : province
     onSubmit({
       budget_min: parseFloat(budgetMin),
       budget_max: parseFloat(budgetMax),
       goal,
       province,
-      district: province === 'Bangkok' ? district : '',
+      district,
       location,
       income: parseFloat(income),
-      expense: parseFloat(expense)
+      expense: parseFloat(expense),
     })
   }
 
   return (
     <div className="max-w-md mx-auto px-4 py-6">
       <div className="mb-6">
-        <span className="inline-block px-3 py-1 bg-blue-100 text-blue-600 rounded-full text-sm mb-4">
+        <span className="inline-block px-3 py-1 bg-violet-100 text-violet-700 rounded-full text-sm mb-4">
           INVESTMENT ENGINE V3.0
         </span>
         <h1 className="text-4xl font-bold mb-4">Start Your Investment Journey</h1>
@@ -143,9 +181,9 @@ export default function DiscoveryForm({ onSubmit }: DiscoveryFormProps) {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="bg-white rounded-lg p-4 space-y-4">
+        <div className="bg-white rounded-lg p-4">
           <div className="flex items-start gap-3">
-            <TrendingUp className="w-5 h-5 text-blue-600 mt-1" />
+            <TrendingUp className="w-5 h-5 text-violet-700 mt-1" />
             <div className="flex-1">
               <h3 className="font-semibold mb-1">Predictive Modeling</h3>
               <p className="text-sm text-gray-600">Real-time simulation of rent vs. flip scenarios based on localized volatility.</p>
@@ -154,193 +192,109 @@ export default function DiscoveryForm({ onSubmit }: DiscoveryFormProps) {
         </div>
 
         <div className="bg-white rounded-lg p-4 space-y-4">
+          {/* Budget */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               CAPITAL ALLOCATION (BUDGET) <span className="text-red-500">*</span>
             </label>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <input
-                  type="number"
-                  placeholder="Min (THB)"
-                  value={budgetMin}
-                  onChange={(e) => setBudgetMin(e.target.value)}
-                  className={`w-full px-4 py-3 bg-gray-50 rounded-lg focus:outline-none focus:ring-2 ${
-                    errors.budgetMin ? 'ring-2 ring-red-500' : 'focus:ring-blue-500'
-                  }`}
-                  required
-                />
-                {errors.budgetMin && (
-                  <p className="text-xs text-red-500 mt-1">{errors.budgetMin}</p>
-                )}
+                <input type="number" placeholder="Min (THB)" value={budgetMin}
+                  onChange={e => setBudgetMin(e.target.value)}
+                  className={`w-full px-4 py-3 bg-gray-50 rounded-lg focus:outline-none focus:ring-2 ${errors.budgetMin ? 'ring-2 ring-red-500' : 'focus:ring-violet-500'}`} />
+                {errors.budgetMin && <p className="text-xs text-red-500 mt-1">{errors.budgetMin}</p>}
               </div>
               <div>
-                <input
-                  type="number"
-                  placeholder="Max (THB)"
-                  value={budgetMax}
-                  onChange={(e) => setBudgetMax(e.target.value)}
-                  className={`w-full px-4 py-3 bg-gray-50 rounded-lg focus:outline-none focus:ring-2 ${
-                    errors.budgetMax ? 'ring-2 ring-red-500' : 'focus:ring-blue-500'
-                  }`}
-                  required
-                />
-                {errors.budgetMax && (
-                  <p className="text-xs text-red-500 mt-1">{errors.budgetMax}</p>
-                )}
+                <input type="number" placeholder="Max (THB)" value={budgetMax}
+                  onChange={e => setBudgetMax(e.target.value)}
+                  className={`w-full px-4 py-3 bg-gray-50 rounded-lg focus:outline-none focus:ring-2 ${errors.budgetMax ? 'ring-2 ring-red-500' : 'focus:ring-violet-500'}`} />
+                {errors.budgetMax && <p className="text-xs text-red-500 mt-1">{errors.budgetMax}</p>}
               </div>
             </div>
-            <p className="text-xs text-gray-500 mt-1">ตัวอย่าง: 1,000,000 - 5,000,000</p>
+            <p className="text-xs text-gray-500 mt-1">Example: 1,000,000 – 5,000,000</p>
           </div>
 
+          {/* Goal */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               INVESTMENT GOAL <span className="text-red-500">*</span>
             </label>
             <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setGoal('rent')}
-                className={`px-4 py-3 rounded-lg font-medium transition ${
-                  goal === 'rent' 
-                    ? 'bg-blue-600 text-white shadow-lg' 
-                    : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
-                }`}
-              >
+              <button type="button" onClick={() => setGoal('rent')}
+                className={`px-4 py-3 rounded-lg font-medium transition ${goal === 'rent' ? 'bg-violet-700 text-white shadow-lg' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'}`}>
                 🏠 Rent
               </button>
-              <button
-                type="button"
-                onClick={() => setGoal('flip')}
-                className={`px-4 py-3 rounded-lg font-medium transition ${
-                  goal === 'flip' 
-                    ? 'bg-blue-600 text-white shadow-lg' 
-                    : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
-                }`}
-              >
+              <button type="button" onClick={() => setGoal('flip')}
+                className={`px-4 py-3 rounded-lg font-medium transition ${goal === 'flip' ? 'bg-violet-700 text-white shadow-lg' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'}`}>
                 💰 Flip
               </button>
             </div>
           </div>
 
+          {/* Location */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               PREFERRED LOCATION <span className="text-red-500">*</span>
             </label>
             <div className="space-y-3">
-              <div>
-                <select
-                  value={province}
-                  onChange={(e) => {
-                    setProvince(e.target.value)
-                    if (e.target.value !== 'Bangkok') {
-                      setDistrict('')
-                    }
-                  }}
-                  className="w-full px-4 py-3 bg-gray-50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
-                  required
-                >
-                  {PROVINCES.map(prov => (
-                    <option key={prov.value} value={prov.value}>
-                      {prov.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <select
+                value={province}
+                onChange={e => { setProvince(e.target.value); setDistrict('') }}
+                className="w-full px-4 py-3 bg-gray-50 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 appearance-none cursor-pointer">
+                {PROVINCES.map(p => (
+                  <option key={p.value} value={p.value}>{p.label}</option>
+                ))}
+              </select>
 
-              {province === 'Bangkok' && (
-                <div className="overflow-hidden transition-all duration-300 ease-in-out">
+              {requiresDistrict && (
+                <div>
                   <select
                     value={district}
-                    onChange={(e) => setDistrict(e.target.value)}
-                    className={`w-full px-4 py-3 bg-gray-50 rounded-lg focus:outline-none focus:ring-2 ${
-                      errors.district ? 'ring-2 ring-red-500' : 'focus:ring-blue-500'
-                    } appearance-none cursor-pointer animate-slideDown`}
-                    required
-                  >
-                    <option value="">-- เลือกเขต --</option>
-                    {BANGKOK_DISTRICTS.map(dist => (
-                      <option key={dist.value} value={dist.value}>
-                        {dist.label}
-                      </option>
+                    onChange={e => setDistrict(e.target.value)}
+                    className={`w-full px-4 py-3 bg-gray-50 rounded-lg focus:outline-none focus:ring-2 appearance-none cursor-pointer ${errors.district ? 'ring-2 ring-red-500' : 'focus:ring-violet-500'}`}>
+                    <option value="">-- Select District --</option>
+                    {districts.map(d => (
+                      <option key={d.value} value={d.value}>{d.label}</option>
                     ))}
                   </select>
-                  {errors.district && (
-                    <p className="text-xs text-red-500 mt-1">{errors.district}</p>
-                  )}
+                  {errors.district && <p className="text-xs text-red-500 mt-1">{errors.district}</p>}
                 </div>
               )}
             </div>
             <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
               <MapPin className="w-3 h-3" />
-              <span>เลือกจังหวัดที่มีโครงการ Sansiri</span>
+              <span>All provinces where Sansiri operates</span>
             </div>
           </div>
 
+          {/* Income / Expense */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 MONTHLY INCOME <span className="text-red-500">*</span>
               </label>
-              <input
-                type="number"
-                placeholder="THB"
-                value={income}
-                onChange={(e) => setIncome(e.target.value)}
-                className={`w-full px-4 py-3 bg-gray-50 rounded-lg focus:outline-none focus:ring-2 ${
-                  errors.income ? 'ring-2 ring-red-500' : 'focus:ring-blue-500'
-                }`}
-                required
-              />
-              {errors.income && (
-                <p className="text-xs text-red-500 mt-1">{errors.income}</p>
-              )}
+              <input type="number" placeholder="THB" value={income}
+                onChange={e => setIncome(e.target.value)}
+                className={`w-full px-4 py-3 bg-gray-50 rounded-lg focus:outline-none focus:ring-2 ${errors.income ? 'ring-2 ring-red-500' : 'focus:ring-violet-500'}`} />
+              {errors.income && <p className="text-xs text-red-500 mt-1">{errors.income}</p>}
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 MONTHLY EXPENSE <span className="text-red-500">*</span>
               </label>
-              <input
-                type="number"
-                placeholder="THB"
-                value={expense}
-                onChange={(e) => setExpense(e.target.value)}
-                className={`w-full px-4 py-3 bg-gray-50 rounded-lg focus:outline-none focus:ring-2 ${
-                  errors.expense ? 'ring-2 ring-red-500' : 'focus:ring-blue-500'
-                }`}
-                required
-              />
-              {errors.expense && (
-                <p className="text-xs text-red-500 mt-1">{errors.expense}</p>
-              )}
+              <input type="number" placeholder="THB" value={expense}
+                onChange={e => setExpense(e.target.value)}
+                className={`w-full px-4 py-3 bg-gray-50 rounded-lg focus:outline-none focus:ring-2 ${errors.expense ? 'ring-2 ring-red-500' : 'focus:ring-violet-500'}`} />
+              {errors.expense && <p className="text-xs text-red-500 mt-1">{errors.expense}</p>}
             </div>
           </div>
         </div>
 
-        <button
-          type="submit"
-          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition flex items-center justify-center gap-2 shadow-lg"
-        >
+        <button type="submit"
+          className="w-full bg-gradient-to-r from-violet-700 to-lime-500 text-white py-4 rounded-xl font-semibold hover:from-violet-800 hover:to-lime-600 transition flex items-center justify-center gap-2 shadow-lg">
           🔍 Find My Match →
         </button>
       </form>
-
-      <style jsx>{`
-        @keyframes slideDown {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        .animate-slideDown {
-          animation: slideDown 0.3s ease-out;
-        }
-      `}</style>
     </div>
   )
 }
