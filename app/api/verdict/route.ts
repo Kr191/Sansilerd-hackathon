@@ -25,12 +25,16 @@ export async function POST(request: Request) {
       )
     }
 
-    // Build loanAssessment and criteria from user_profile if not provided directly
+    // DTI = (user existing expenses + new mortgage) / income
+    const income = user_profile?.income || 1
+    const expense = user_profile?.expense ?? 0
+    const mortgagePayment = simulation?.monthlyPayment ?? 0
+    const dti = (expense + mortgagePayment) / income
     const resolvedLoan = loanAssessment || {
-      status: 'passed',
-      dti: user_profile?.expense / (user_profile?.income || 1),
+      status: dti < 0.4 ? 'passed' : dti < 0.5 ? 'warning' : 'failed',
+      dti,
       maxLoan: 0,
-      monthlyCapacity: (user_profile?.income || 0) * 0.35,
+      monthlyCapacity: income * 0.35,
     }
     const resolvedCriteria = criteria || {
       budget_min: property.price * 0.8,

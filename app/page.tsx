@@ -12,15 +12,10 @@ export default function Home() {
   const [searchCriteria, setSearchCriteria] = useState<any>(null)
 
   const handleSelectProperty = (property: any) => {
-    // เก็บ search criteria ใน sessionStorage เพื่อให้กลับมาได้
     if (searchCriteria) {
       sessionStorage.setItem('searchCriteria', JSON.stringify(searchCriteria))
     }
-    
-    // เก็บ property ที่เลือกใน localStorage เพื่อให้กลับมาได้
     localStorage.setItem('selectedProperty', JSON.stringify(property))
-    
-    // นำทางไปหน้า simulator พร้อมส่งข้อมูล
     const params = new URLSearchParams({
       income: searchCriteria?.income?.toString() || '0',
       expense: searchCriteria?.expense?.toString() || '0'
@@ -28,7 +23,6 @@ export default function Home() {
     router.push(`/simulator/${property.id}?${params.toString()}`)
   }
 
-  // ตรวจสอบว่ามี search criteria ใน sessionStorage หรือไม่
   useEffect(() => {
     const savedCriteria = sessionStorage.getItem('searchCriteria')
     if (savedCriteria && !searchCriteria) {
@@ -52,7 +46,7 @@ export default function Home() {
             onBack={() => {
               setSearchCriteria(null)
               sessionStorage.removeItem('searchCriteria')
-              localStorage.removeItem('selectedProperty') // ลบ property ที่เลือกด้วย
+              localStorage.removeItem('selectedProperty')
             }}
           />
         )}

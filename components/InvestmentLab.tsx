@@ -13,14 +13,13 @@ interface InvestmentLabProps {
 
 export default function InvestmentLab({ property, userCriteria, onGetVerdict, onBack }: InvestmentLabProps) {
   const [downPayment, setDownPayment] = useState('')
-  const [tenure, setTenure] = useState(30) // เพิ่ม state สำหรับ tenure
+  const [tenure, setTenure] = useState(30)
   const [loanData, setLoanData] = useState<any>(null)
   const [lastCalculatedDownPayment, setLastCalculatedDownPayment] = useState('')
   const [simulation, setSimulation] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [calculating, setCalculating] = useState(false)
   
-  // เพิ่ม state สำหรับ income และ expense ที่แก้ไขได้
   const [monthlyIncome, setMonthlyIncome] = useState(userCriteria?.income || 0)
   const [monthlyExpense, setMonthlyExpense] = useState(userCriteria?.expense || 0)
 
@@ -40,30 +39,32 @@ export default function InvestmentLab({ property, userCriteria, onGetVerdict, on
         body: JSON.stringify({
           income: monthlyIncome,
           expense: monthlyExpense,
-          down_payment: down
+          down_payment: down,
+          property_price: property.price,
+          interest_rate: 4.2,
+          tenure: tenure,
         })
       })
       
       const data = await response.json()
-      console.log('Loan data received:', data) // Debug log
       setLoanData(data)
-      setLastCalculatedDownPayment(downPayment) // บันทึกค่าที่คำนวณแล้ว
+      setLastCalculatedDownPayment(downPayment)
 
-      // Simulate investment
       const simResponse = await fetch('/api/simulate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           property_id: property.id,
           down_payment: down,
-          loan_amount: data.maxLoan, // ใช้ maxLoan ไม่ใช่ max_loan
+          interest_rate: 4.2,
+          tenure: tenure,
+          goal: 'rent',
           monthly_income: monthlyIncome,
           monthly_expense: monthlyExpense
         })
       })
       
       const simData = await simResponse.json()
-      console.log('Simulation data received:', simData) // Debug log
       setSimulation(simData)
     } catch (error) {
       console.error('Error calculating loan:', error)
@@ -73,11 +74,9 @@ export default function InvestmentLab({ property, userCriteria, onGetVerdict, on
   }
 
   const handleDownPaymentBlur = () => {
-    // ไม่คำนวณอัตโนมัติเมื่อ blur - ให้ผู้ใช้กด Calculate เอง
   }
 
   const handleDownPaymentKeyPress = (e: React.KeyboardEvent) => {
-    // คำนวณเมื่อกด Enter
     if (e.key === 'Enter') {
       calculateLoan()
     }
@@ -107,7 +106,10 @@ export default function InvestmentLab({ property, userCriteria, onGetVerdict, on
       onGetVerdict({
         ...simulation,
         verdict,
-        downPayment: parseFloat(downPayment)
+        downPayment: parseFloat(downPayment),
+        dti: loanData?.dti ?? 0,
+        income: monthlyIncome,
+        expense: monthlyExpense,
       })
     } catch (error) {
       console.error('Error getting verdict:', error)
@@ -219,7 +221,7 @@ export default function InvestmentLab({ property, userCriteria, onGetVerdict, on
           {calculating && (
             <div className="flex items-center justify-center p-6">
               <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-              <span className="ml-3 text-gray-600">กำลังคำนวณ...</span>
+              <span className="ml-3 text-gray-600">Calculating...</span>
             </div>
           )}
 
@@ -228,7 +230,7 @@ export default function InvestmentLab({ property, userCriteria, onGetVerdict, on
               <div className="relative w-64 h-40 mx-auto mb-4">
                 {/* Semi-circle gauge */}
                 <svg className="w-full h-full" viewBox="0 0 200 110">
-                  {/* Background semi-circle (เส้นสีเทา 100%) */}
+                  {/* Background semi-circle */}
                   <path
                     d="M 20 100 A 80 80 0 0 1 180 100"
                     fill="none"
@@ -236,7 +238,7 @@ export default function InvestmentLab({ property, userCriteria, onGetVerdict, on
                     strokeWidth="16"
                     strokeLinecap="round"
                   />
-                  {/* Filled semi-circle based on DTI percentage (เส้นสีฟ้า = DTI%) */}
+                  {/* Filled semi-circle based on DTI percentage */}
                   <path
                     d="M 20 100 A 80 80 0 0 1 180 100"
                     fill="none"
@@ -244,10 +246,7 @@ export default function InvestmentLab({ property, userCriteria, onGetVerdict, on
                     strokeWidth="16"
                     strokeLinecap="round"
                     strokeDasharray={`${(() => {
-                      // DTI เป็นเปอร์เซ็นต์โดยตรง เช่น 0.38 = 38%
                       const dtiPercent = (loanData.dti || 0) * 100
-                      // ความยาวครึ่งวงกลมทั้งหมด = 251.2
-                      // เส้นสีฟ้า = DTI% ของความยาวทั้งหมด
                       const fillAmount = (dtiPercent / 100) * 251.2
                       return fillAmount
                     })()} 251.2`}
@@ -360,19 +359,17 @@ export default function InvestmentLab({ property, userCriteria, onGetVerdict, on
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600 text-sm">Tenure (Years)</span>
-              <span className="font-bold text-gray-900">{tenure} Years</span>
-            </div>
+              <span className="font-bold text-gray-900">{tenure} Years</span>            </div>
           </div>
 
           <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 mb-6">
             <p className="text-xs text-gray-500 uppercase mb-2">Estimated Monthly Payment</p>
             <p className="text-4xl font-bold text-gray-900 mb-4">
               {(() => {
-                // คำนวณ monthly payment จาก down payment และ tenure ที่เลือก
                 const loanAmount = property.price - parseFloat(downPayment)
-                const annualRate = 0.042 // คงที่ 4.2%
+                const annualRate = 0.042
                 const monthlyRate = annualRate / 12
-                const numPayments = tenure * 12 // ใช้ tenure ที่เลือก
+                const numPayments = tenure * 12
                 
                 if (loanAmount <= 0) return '0'
                 
@@ -393,7 +390,6 @@ export default function InvestmentLab({ property, userCriteria, onGetVerdict, on
                 <p className="text-gray-500 mb-1">Payback Period</p>
                 <p className="text-gray-900 font-bold text-lg">
                   {(() => {
-                    // คำนวณ payback period จาก rental yield
                     const rentalYield = property.rentalYield || 5.5
                     const downPaymentAmount = parseFloat(downPayment)
                     const annualReturn = (property.price * rentalYield) / 100
@@ -429,7 +425,7 @@ export default function InvestmentLab({ property, userCriteria, onGetVerdict, on
                   {(() => {
                     const loanAmount = property.price - parseFloat(downPayment)
                     const monthlyRate = 0.045 / 12
-                    const numPayments = tenure * 12 // ใช้ tenure ที่เลือก
+                    const numPayments = tenure * 12
                     const payment = (loanAmount * monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / 
                                    (Math.pow(1 + monthlyRate, numPayments) - 1)
                     return Math.round(payment).toLocaleString()
@@ -450,7 +446,7 @@ export default function InvestmentLab({ property, userCriteria, onGetVerdict, on
                   {(() => {
                     const loanAmount = property.price - parseFloat(downPayment)
                     const monthlyRate = 0.038 / 12
-                    const numPayments = tenure * 12 // ใช้ tenure ที่เลือก
+                    const numPayments = tenure * 12
                     const payment = (loanAmount * monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / 
                                    (Math.pow(1 + monthlyRate, numPayments) - 1)
                     return Math.round(payment).toLocaleString()
@@ -471,7 +467,7 @@ export default function InvestmentLab({ property, userCriteria, onGetVerdict, on
                 const rentalYield = property.rentalYield || 5.5
                 const capitalGain = property.capitalGainProjection?.year5 || 18
                 const avgGrowth = (capitalGain / 5).toFixed(1)
-                const netReturn = (rentalYield - 1.5).toFixed(1) // หัก inflation และค่าใช้จ่าย
+                const netReturn = (rentalYield - 1.5).toFixed(1)
                 return `Historical growth in this sector has averaged ${avgGrowth}% annually. With rental yield of ${rentalYield.toFixed(1)}%, your real return is projected at ${netReturn}% net of all costs.`
               })()}
             </p>
