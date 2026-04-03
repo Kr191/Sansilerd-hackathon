@@ -6,46 +6,56 @@ export async function POST(request: Request) {
   try {
     const body = await request.json()
     
-    const { property_id, price, downPayment, interestRate, tenure, goal } = body
-    
+    const {
+      property_id,
+      down_payment,
+      interest_rate,
+      tenure,
+      goal,
+      // legacy field names
+      price, downPayment, interestRate,
+    } = body
+
+    const resolvedDownPayment = down_payment ?? downPayment
+    const resolvedRate        = interest_rate ?? interestRate ?? 4.2
+    const resolvedTenure      = tenure ?? 20
+    const resolvedGoal        = goal ?? 'rent'
+
     // Find property from live data
     const properties = await fetchSansiriProperties()
     let property = properties.find(p => p.id === property_id)
 
-    
-    // If property not found but price provided, create mock property
     if (!property && price) {
       property = {
         id: 'custom',
         name: 'Custom Property',
         price: price,
-        averageRent: price * 0.004, // Estimate 0.4% of price per month
+        averageRent: price * 0.004,
         rentalYield: 4.8,
         capitalGainProjection: { year3: 10, year5: 20, year10: 40 }
       } as any
     }
 
     if (!property) {
-      return NextResponse.json(
-        { error: 'Property not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Property not found' }, { status: 404 })
     }
 
     const simulation = aiAgent.simulateInvestment(
       property,
-      downPayment || property.price * 0.3,
-      interestRate || 6.5,
-      tenure || 20,
-      goal || 'rent'
+      resolvedDownPayment ?? property.price * 0.3,
+      resolvedRate,
+      resolvedTenure,
+      resolvedGoal
     )
-    
-    return NextResponse.json(simulation)
+
+    return NextResponse.json({
+      ...simulation,
+      tenure: resolvedTenure,
+      interestRate: resolvedRate,
+      downPaymentUsed: resolvedDownPayment,
+    })
   } catch (error) {
     console.error('Error in simulate API:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

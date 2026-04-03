@@ -164,27 +164,30 @@ export class AIInvestmentAgent {
   /**
    * Calculate loan assessment
    */
-  calculateLoanAssessment(income: number, expense: number, downPayment: number) {
-    const monthlyIncome = income
-    const monthlyExpense = expense
-    
-    // Calculate DTI (Debt-to-Income Ratio)
-    const dti = monthlyExpense / monthlyIncome
-    
-    // Maximum monthly payment (35% of income)
-    const maxMonthlyPayment = monthlyIncome * 0.35
-    
-    // Estimate max loan (simplified calculation)
-    // Assuming 20 years, 6.5% interest
-    const interestRate = 0.065 / 12
-    const months = 20 * 12
-    const maxLoan = (maxMonthlyPayment * (Math.pow(1 + interestRate, months) - 1)) / 
-                    (interestRate * Math.pow(1 + interestRate, months))
-    
+  calculateLoanAssessment(income: number, expense: number, downPayment: number, propertyPrice?: number, interestRate = 4.2, tenure = 20) {
+    // Monthly mortgage payment on the new property
+    const loanAmount = propertyPrice ? propertyPrice - downPayment : 0
+    const monthlyRate = interestRate / 100 / 12
+    const months = tenure * 12
+    const mortgagePayment = loanAmount > 0
+      ? (loanAmount * monthlyRate * Math.pow(1 + monthlyRate, months)) /
+        (Math.pow(1 + monthlyRate, months) - 1)
+      : 0
+
+    // DTI = (existing obligations + new mortgage) / gross income
+    const totalDebt = expense + mortgagePayment
+    const dti = totalDebt / income
+
+    const maxMonthlyPayment = income * 0.35
+    const interestRateCalc = 0.065 / 12
+    const maxLoan = (maxMonthlyPayment * (Math.pow(1 + interestRateCalc, months) - 1)) /
+                    (interestRateCalc * Math.pow(1 + interestRateCalc, months))
+
     return {
       maxLoan: Math.round(maxLoan),
       monthlyCapacity: Math.round(maxMonthlyPayment),
-      dti: Math.round(dti * 100) / 100,
+      mortgagePayment: Math.round(mortgagePayment),
+      dti: Math.round(dti * 1000) / 1000, // 3 decimal places for accuracy
       status: dti < 0.4 ? 'passed' : dti < 0.5 ? 'warning' : 'failed',
       recommendation: this.getLoanRecommendation(dti, maxLoan, downPayment)
     }
@@ -230,11 +233,14 @@ export class AIInvestmentAgent {
     let projectedProfit = 0
 
     if (goal === 'rent') {
-      // Rental income scenario
       const monthlyRent = property.averageRent
-      const netMonthlyIncome = monthlyRent - monthlyPayment - (monthlyRent * 0.1) // 10% maintenance
+      const occupancy = (property.occupancyRate ?? 85) / 100
+      const effectiveRent = monthlyRent * occupancy
+      // Expenses: maintenance + common fee + land tax ≈ 1.5% of price per year / 12
+      const monthlyExpenses = Math.round((property.price * 0.015) / 12)
+      const netMonthlyIncome = effectiveRent - monthlyPayment - monthlyExpenses
       const annualIncome = netMonthlyIncome * 12
-      roi = (annualIncome / property.price) * 100
+      roi = downPayment > 0 ? (annualIncome / downPayment) * 100 : 0
       paybackPeriod = downPayment / (netMonthlyIncome > 0 ? netMonthlyIncome : 1)
       projectedProfit = annualIncome * tenure
     } else {
@@ -249,11 +255,16 @@ export class AIInvestmentAgent {
       monthlyPayment: Math.round(monthlyPayment),
       totalPayment: Math.round(totalPayment),
       roi: Math.round(roi * 10) / 10,
-      paybackPeriod: Math.round(paybackPeriod / 12 * 10) / 10, // in years
+      rentalYield: property.rentalYield,
+      paybackPeriod: Math.round(paybackPeriod / 12 * 10) / 10,
       projectedProfit: Math.round(projectedProfit),
       monthlyRent: property.averageRent,
-      netMonthlyCashFlow: goal === 'rent' 
-        ? Math.round(property.averageRent - monthlyPayment - (property.averageRent * 0.1))
+      netMonthlyCashFlow: goal === 'rent'
+        ? Math.round(
+            property.averageRent * ((property.occupancyRate ?? 85) / 100)
+            - monthlyPayment
+            - (property.price * 0.015) / 12
+          )
         : 0
     }
   }
@@ -278,12 +289,16 @@ export class AIInvestmentAgent {
     const cons: string[] = []
     let score = 50
 
-    // Analyze ROI
-    if (simulation.roi > 8) {
-      pros.push(`ROI above market average (${simulation.roi}%)`)
+    // Analyze ROI — use gross rental yield if available, else simulation roi
+    const grossYield = (property as any).rentalYield ?? simulation.rentalYield ?? simulation.roi
+    if (grossYield > 6.5) {
+      pros.push(`Strong rental yield (${grossYield.toFixed(1)}%)`)
       score += 15
-    } else if (simulation.roi < 4) {
-      cons.push(`ROI below market average (${simulation.roi}%)`)
+    } else if (grossYield >= 5) {
+      pros.push(`Rental yield near market average (${grossYield.toFixed(1)}%)`)
+      score += 5
+    } else if (grossYield < 4) {
+      cons.push(`Low rental yield (${grossYield.toFixed(1)}%)`)
       score -= 15
     }
 

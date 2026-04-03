@@ -27,10 +27,10 @@ export default function SimulatorPage() {
   const [investmentData, setInvestmentData] = useState<any>(null)
   const [verdictData, setVerdictData] = useState<any>(null)
 
-  // Persist step state
+  // Persist step state — versioned so stale shapes are ignored
   useEffect(() => {
     if (!property) return
-    localStorage.setItem('simulatorState', JSON.stringify({ propertyId, step, investmentData, verdictData }))
+    localStorage.setItem('simulatorState', JSON.stringify({ v: 4, propertyId, step, investmentData, verdictData }))
   }, [step, propertyId, property, investmentData, verdictData])
 
   useEffect(() => {
@@ -50,10 +50,14 @@ export default function SimulatorPage() {
           const saved = localStorage.getItem('simulatorState')
           if (saved) {
             const state = JSON.parse(saved)
-            if (state.propertyId === propertyId) {
+            // Only restore if same property AND same schema version
+            if (state.v === 4 && state.propertyId === propertyId) {
               setStep(state.step || 'simulator')
               setInvestmentData(state.investmentData || null)
               setVerdictData(state.verdictData || null)
+            } else {
+              // Stale — clear it
+              localStorage.removeItem('simulatorState')
             }
           }
         } catch {}
@@ -102,7 +106,7 @@ export default function SimulatorPage() {
           property={property}
           userCriteria={userCriteria}
           onGetVerdict={(data) => { setInvestmentData(data); setStep('verdict') }}
-          onBack={() => setStep('simulator')}
+          onBack={() => { setInvestmentData(null); setStep('simulator') }}
         />
       )}
 

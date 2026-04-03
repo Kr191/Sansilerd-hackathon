@@ -11,7 +11,7 @@ export default function BottomNav() {
     { id: 'discover', label: 'DISCOVER', icon: Home, path: '/' },
     { id: 'simulator', label: 'SIMULATOR', icon: TrendingUp, path: '/simulator' },
     { id: 'portfolio', label: 'PORTFOLIO', icon: Briefcase, path: '/portfolio' },
-    { id: 'alerts', label: 'ALERTS', icon: Bell, path: '/alerts' },
+    { id: 'alerts', label: 'INSIGHTS', icon: Bell, path: '/alerts' },
   ]
 
   const getCurrentView = () => {
